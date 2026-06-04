@@ -1,0 +1,1079 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>APM Metal Works — Project Cost Manager</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.31/jspdf.plugin.autotable.min.js"></script>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet"/>
+<style>
+:root {
+  --bg:#0f0f0f;--surface:#161616;--surface2:#1e1e1e;--surface3:#252525;
+  --border:rgba(255,255,255,0.08);--border2:rgba(255,255,255,0.14);
+  --text:#f0ede8;--text2:#9a9590;--text3:#5a5753;
+  --accent:#c8a96e;--accent2:#e8c98e;--accent-bg:rgba(200,169,110,0.10);
+  --red:#e05c5c;--red-bg:rgba(224,92,92,0.10);
+  --green:#5cb87a;--green-bg:rgba(92,184,122,0.10);
+  --blue:#5c9ee0;--blue-bg:rgba(92,158,224,0.10);
+  --amber:#e0a45c;--amber-bg:rgba(224,164,92,0.10);
+  --purple:#9e7de0;--purple-bg:rgba(158,125,224,0.10);
+  --teal:#5cc4b0;--teal-bg:rgba(92,196,176,0.10);
+  --radius:10px;--radius-sm:6px;
+  --font:'DM Sans',sans-serif;--mono:'DM Mono',monospace;
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
+html{font-size:14px;}
+body{font-family:var(--font);background:var(--bg);color:var(--text);min-height:100vh;display:flex;}
+
+/* SIDEBAR */
+.sidebar{width:240px;min-width:240px;background:var(--surface);border-right:1px solid var(--border);display:flex;flex-direction:column;height:100vh;position:sticky;top:0;overflow-y:auto;}
+.sidebar-logo{padding:20px 20px 16px;border-bottom:1px solid var(--border);}
+.sidebar-logo h1{font-size:15px;font-weight:600;color:var(--accent);letter-spacing:0.02em;}
+.sidebar-logo p{font-size:11px;color:var(--text3);margin-top:2px;}
+.sidebar-section-label{font-size:10px;font-weight:600;color:var(--text3);letter-spacing:0.08em;text-transform:uppercase;padding:16px 20px 6px;}
+.nav-item{display:flex;align-items:center;gap:10px;padding:8px 20px;font-size:13px;color:var(--text2);cursor:pointer;transition:all 0.15s;border-left:2px solid transparent;}
+.nav-item:hover{color:var(--text);background:var(--surface2);}
+.nav-item.active{color:var(--accent);background:var(--accent-bg);border-left-color:var(--accent);}
+.nav-icon{font-size:16px;width:16px;text-align:center;}
+.nav-divider{height:1px;background:var(--border);margin:8px 0;}
+.project-selector{padding:12px 20px;border-bottom:1px solid var(--border);}
+.project-selector label{font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:0.08em;display:block;margin-bottom:6px;}
+.project-selector select{width:100%;background:var(--surface2);border:1px solid var(--border2);color:var(--text);font-family:var(--font);font-size:12px;padding:6px 10px;border-radius:var(--radius-sm);cursor:pointer;}
+.project-selector select:focus{outline:none;border-color:var(--accent);}
+.btn-new-project{margin-top:8px;width:100%;padding:6px;background:var(--accent-bg);border:1px solid rgba(200,169,110,0.2);color:var(--accent);font-family:var(--font);font-size:12px;border-radius:var(--radius-sm);cursor:pointer;transition:all 0.15s;}
+.btn-new-project:hover{background:rgba(200,169,110,0.18);}
+.config-status{margin-top:auto;padding:12px 20px;border-top:1px solid var(--border);font-size:11px;color:var(--text3);}
+.config-status span{display:block;}
+.status-dot{display:inline-block;width:6px;height:6px;border-radius:50%;margin-right:6px;vertical-align:middle;}
+.status-dot.connected{background:var(--green);}
+.status-dot.disconnected{background:var(--red);}
+
+/* MAIN */
+.main{flex:1;overflow-y:auto;padding:28px 32px;}
+.page{display:none;}
+.page.active{display:block;}
+.page-header{margin-bottom:24px;border-bottom:1px solid var(--border);padding-bottom:20px;display:flex;justify-content:space-between;align-items:flex-start;}
+.page-header-text h2{font-size:20px;font-weight:600;color:var(--text);}
+.page-header-text p{font-size:13px;color:var(--text2);margin-top:4px;}
+.page-header-actions{display:flex;gap:8px;flex-shrink:0;}
+
+/* CARDS */
+.summary-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:12px;margin-bottom:28px;}
+.summary-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:16px;}
+.summary-card .label{font-size:11px;color:var(--text3);text-transform:uppercase;letter-spacing:0.06em;margin-bottom:8px;}
+.summary-card .value{font-size:19px;font-weight:500;font-family:var(--mono);}
+.summary-card .value.accent{color:var(--accent);}
+.summary-card .value.red{color:var(--red);}
+.summary-card .value.green{color:var(--green);}
+.summary-card .value.blue{color:var(--blue);}
+.summary-card .sub{font-size:11px;color:var(--text3);margin-top:4px;}
+
+/* TABLE */
+.table-wrap{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);overflow:hidden;margin-bottom:20px;}
+.table-toolbar{display:flex;justify-content:space-between;align-items:center;padding:14px 16px;border-bottom:1px solid var(--border);flex-wrap:wrap;gap:10px;}
+.table-toolbar h3{font-size:14px;font-weight:500;}
+.table-toolbar .actions{display:flex;gap:8px;flex-wrap:wrap;}
+table{width:100%;border-collapse:collapse;}
+th{font-size:11px;font-weight:500;color:var(--text3);text-transform:uppercase;letter-spacing:0.06em;padding:10px 16px;text-align:left;background:var(--surface2);border-bottom:1px solid var(--border);}
+td{padding:11px 16px;font-size:13px;border-bottom:1px solid var(--border);color:var(--text);vertical-align:middle;}
+tr:last-child td{border-bottom:none;}
+tr:hover td{background:var(--surface2);}
+.td-mono{font-family:var(--mono);font-size:13px;}
+.td-right{text-align:right;}
+.empty-row td{text-align:center;color:var(--text3);padding:32px;}
+
+/* DATE FILTER BAR */
+.filter-bar{display:flex;align-items:center;gap:10px;padding:10px 16px;background:var(--surface2);border-bottom:1px solid var(--border);flex-wrap:wrap;}
+.filter-bar label{font-size:11px;color:var(--text3);text-transform:uppercase;letter-spacing:0.06em;}
+.filter-bar input[type="date"]{background:var(--surface3);border:1px solid var(--border2);color:var(--text);font-family:var(--font);font-size:12px;padding:5px 10px;border-radius:var(--radius-sm);}
+.filter-bar input[type="date"]:focus{outline:none;border-color:var(--accent);}
+.filter-bar .btn-clear{font-size:11px;color:var(--text3);background:none;border:none;cursor:pointer;padding:4px 6px;font-family:var(--font);}
+.filter-bar .btn-clear:hover{color:var(--text);}
+
+/* BUTTONS */
+.btn{padding:7px 14px;border-radius:var(--radius-sm);font-family:var(--font);font-size:13px;font-weight:500;cursor:pointer;border:1px solid var(--border2);color:var(--text);background:var(--surface2);transition:all 0.15s;display:inline-flex;align-items:center;gap:6px;}
+.btn:hover{background:var(--surface3);}
+.btn-primary{background:var(--accent);color:#0f0f0f;border-color:var(--accent);font-weight:600;}
+.btn-primary:hover{background:var(--accent2);}
+.btn-danger{color:var(--red);border-color:rgba(224,92,92,0.25);background:var(--red-bg);}
+.btn-danger:hover{background:rgba(224,92,92,0.18);}
+.btn-success{color:var(--green);border-color:rgba(92,184,122,0.25);background:var(--green-bg);}
+.btn-success:hover{background:rgba(92,184,122,0.18);}
+.btn-whatsapp{color:#25D366;border-color:rgba(37,211,102,0.25);background:rgba(37,211,102,0.08);}
+.btn-whatsapp:hover{background:rgba(37,211,102,0.16);}
+.btn-sm{padding:4px 10px;font-size:12px;}
+.btn-icon{padding:6px 8px;}
+
+/* BADGE */
+.badge{display:inline-block;padding:2px 8px;border-radius:20px;font-size:11px;font-weight:500;}
+.badge-direct{background:var(--blue-bg);color:var(--blue);}
+.badge-indirect{background:var(--amber-bg);color:var(--amber);}
+.badge-goci{background:var(--purple-bg);color:var(--purple);}
+.badge-payroll{background:var(--green-bg);color:var(--green);}
+.badge-purchase{background:var(--teal-bg);color:var(--teal);}
+
+/* MODAL */
+.modal-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,0.7);z-index:1000;align-items:center;justify-content:center;}
+.modal-overlay.open{display:flex;}
+.modal{background:var(--surface);border:1px solid var(--border2);border-radius:var(--radius);width:520px;max-width:95vw;max-height:90vh;overflow-y:auto;padding:24px;}
+.modal h3{font-size:16px;font-weight:600;margin-bottom:20px;}
+.form-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px;}
+.field{display:flex;flex-direction:column;gap:6px;}
+.field.span2{grid-column:span 2;}
+.field label{font-size:11px;color:var(--text2);font-weight:500;text-transform:uppercase;letter-spacing:0.06em;}
+.field input,.field select,.field textarea{background:var(--surface2);border:1px solid var(--border2);color:var(--text);font-family:var(--font);font-size:13px;padding:8px 12px;border-radius:var(--radius-sm);transition:border-color 0.15s;}
+.field input:focus,.field select:focus,.field textarea:focus{outline:none;border-color:var(--accent);}
+.field input::placeholder{color:var(--text3);}
+.field select option{background:var(--surface2);}
+.modal-footer{display:flex;justify-content:flex-end;gap:10px;margin-top:24px;padding-top:16px;border-top:1px solid var(--border);}
+
+/* TOAST */
+.toast{position:fixed;bottom:24px;right:24px;background:var(--surface3);border:1px solid var(--border2);border-radius:var(--radius-sm);padding:12px 16px;font-size:13px;z-index:9999;opacity:0;transform:translateY(8px);transition:all 0.2s;max-width:320px;}
+.toast.show{opacity:1;transform:translateY(0);}
+.toast.success{border-color:var(--green);color:var(--green);}
+.toast.error{border-color:var(--red);color:var(--red);}
+
+/* COST BARS */
+.cost-section{margin-bottom:20px;}
+.cost-section-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;}
+.cost-bar-wrap{background:var(--surface2);border-radius:4px;height:6px;margin-bottom:14px;overflow:hidden;}
+.cost-bar{height:100%;border-radius:4px;transition:width 0.4s ease;}
+
+/* COMPARE TABLE */
+.compare-table{width:100%;border-collapse:collapse;}
+.compare-table th{background:var(--surface2);padding:10px 14px;font-size:11px;color:var(--text3);text-transform:uppercase;letter-spacing:0.06em;border-bottom:1px solid var(--border);}
+.compare-table td{padding:10px 14px;font-size:13px;border-bottom:1px solid var(--border);}
+.compare-table tr:last-child td{border-bottom:none;}
+.compare-table .proj-name{font-weight:500;color:var(--accent);}
+
+@media(max-width:768px){.sidebar{display:none;}.main{padding:16px;}}
+</style>
+</head>
+<body>
+
+<aside class="sidebar">
+  <div class="sidebar-logo">
+    <h1>⚙ APM Metal Works</h1>
+    <p>Cost Management System</p>
+  </div>
+  <div class="project-selector">
+    <label>Active Project</label>
+    <select id="projectSelect" onchange="selectProject(this.value)">
+      <option value="">— Select Project —</option>
+    </select>
+    <button class="btn-new-project" onclick="openModal('projectModal')">+ New Project</button>
+  </div>
+  <div class="sidebar-section-label">Overview</div>
+  <div class="nav-item active" onclick="navigate('dashboard',this)"><span class="nav-icon">◈</span> Dashboard</div>
+  <div class="nav-item" onclick="navigate('compare',this)"><span class="nav-icon">⊞</span> Compare Projects</div>
+  <div class="nav-divider"></div>
+  <div class="sidebar-section-label">Cost Categories</div>
+  <div class="nav-item" onclick="navigate('boq',this)"><span class="nav-icon">≡</span> Bill of Quantity</div>
+  <div class="nav-item" onclick="navigate('purchases',this)"><span class="nav-icon">◉</span> Purchases</div>
+  <div class="nav-item" onclick="navigate('payroll',this)"><span class="nav-icon">◎</span> Payroll</div>
+  <div class="nav-item" onclick="navigate('direct',this)"><span class="nav-icon">◆</span> Direct Costs</div>
+  <div class="nav-item" onclick="navigate('indirect',this)"><span class="nav-icon">◇</span> Indirect Costs</div>
+  <div class="nav-item" onclick="navigate('goci',this)"><span class="nav-icon">◐</span> GOCI</div>
+  <div class="nav-divider"></div>
+  <div class="config-status">
+    <span><span class="status-dot disconnected" id="statusDot"></span> Database</span>
+    <span id="statusText" style="margin-top:2px;">Connecting...</span>
+  </div>
+</aside>
+
+<main class="main">
+
+  <!-- DASHBOARD -->
+  <div id="page-dashboard" class="page active">
+    <div class="page-header">
+      <div class="page-header-text">
+        <h2 id="dashProjectName">Select a Project</h2>
+        <p id="dashProjectDesc">Choose a project from the sidebar.</p>
+      </div>
+      <div class="page-header-actions">
+        <button class="btn btn-whatsapp btn-sm" onclick="sendWhatsApp()">📲 WhatsApp Summary</button>
+        <button class="btn btn-success btn-sm" onclick="exportExcel()">↓ Excel</button>
+        <button class="btn btn-sm" onclick="exportPDF()">↓ PDF</button>
+      </div>
+    </div>
+    <div class="summary-grid">
+      <div class="summary-card"><div class="label">BOQ Value</div><div class="value accent" id="sumBOQ">SAR 0.00</div><div class="sub">Contract value</div></div>
+      <div class="summary-card"><div class="label">Total Costs</div><div class="value red" id="sumCosts">SAR 0.00</div><div class="sub">All categories</div></div>
+      <div class="summary-card"><div class="label">Net Margin</div><div class="value green" id="sumMargin">SAR 0.00</div><div class="sub">BOQ minus costs</div></div>
+      <div class="summary-card"><div class="label">Margin %</div><div class="value blue" id="sumMarginPct">0.0%</div><div class="sub">Gross margin</div></div>
+    </div>
+    <div class="table-wrap" style="padding:20px;">
+      <div style="font-size:14px;font-weight:500;margin-bottom:20px;">Cost Breakdown</div>
+      <div class="cost-section"><div class="cost-section-header"><span style="font-size:13px;font-weight:500;color:var(--teal)">▸ Purchases</span><span class="td-mono" id="brPurchases">SAR 0.00</span></div><div class="cost-bar-wrap"><div class="cost-bar" id="barPurchases" style="background:var(--teal);width:0%"></div></div></div>
+      <div class="cost-section"><div class="cost-section-header"><span style="font-size:13px;font-weight:500;color:var(--green)">▸ Payroll</span><span class="td-mono" id="brPayroll">SAR 0.00</span></div><div class="cost-bar-wrap"><div class="cost-bar" id="barPayroll" style="background:var(--green);width:0%"></div></div></div>
+      <div class="cost-section"><div class="cost-section-header"><span style="font-size:13px;font-weight:500;color:var(--blue)">▸ Direct Costs</span><span class="td-mono" id="brDirect">SAR 0.00</span></div><div class="cost-bar-wrap"><div class="cost-bar" id="barDirect" style="background:var(--blue);width:0%"></div></div></div>
+      <div class="cost-section"><div class="cost-section-header"><span style="font-size:13px;font-weight:500;color:var(--amber)">▸ Indirect Costs</span><span class="td-mono" id="brIndirect">SAR 0.00</span></div><div class="cost-bar-wrap"><div class="cost-bar" id="barIndirect" style="background:var(--amber);width:0%"></div></div></div>
+      <div class="cost-section"><div class="cost-section-header"><span style="font-size:13px;font-weight:500;color:var(--purple)">▸ GOCI</span><span class="td-mono" id="brGOCI">SAR 0.00</span></div><div class="cost-bar-wrap"><div class="cost-bar" id="barGOCI" style="background:var(--purple);width:0%"></div></div></div>
+    </div>
+  </div>
+
+  <!-- COMPARE PROJECTS -->
+  <div id="page-compare" class="page">
+    <div class="page-header">
+      <div class="page-header-text"><h2>Compare Projects</h2><p>Side-by-side cost breakdown across all projects.</p></div>
+      <div class="page-header-actions">
+        <button class="btn btn-success btn-sm" onclick="exportCompareExcel()">↓ Excel</button>
+        <button class="btn btn-sm" onclick="exportComparePDF()">↓ PDF</button>
+      </div>
+    </div>
+    <div class="table-wrap">
+      <table class="compare-table" id="compareTable">
+        <thead><tr id="compareHead"></tr></thead>
+        <tbody id="compareBody"></tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- BOQ -->
+  <div id="page-boq" class="page">
+    <div class="page-header">
+      <div class="page-header-text"><h2>Bill of Quantity</h2><p>Line-by-line scope items and contract values.</p></div>
+      <div class="page-header-actions">
+        <button class="btn btn-success btn-sm" onclick="exportTableExcel('boq')">↓ Excel</button>
+        <button class="btn btn-primary btn-sm" onclick="openModal('boqModal')">+ Add Item</button>
+      </div>
+    </div>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>#</th><th>Description</th><th>Unit</th><th class="td-right">Qty</th><th class="td-right">Unit Rate (SAR)</th><th class="td-right">Total (SAR)</th><th></th></tr></thead>
+        <tbody id="boqTableBody"><tr class="empty-row"><td colspan="7">No items yet.</td></tr></tbody>
+        <tfoot id="boqTfoot" style="display:none">
+          <tr style="background:var(--surface2)"><td colspan="5" style="text-align:right;font-weight:500;padding:12px 16px;font-size:13px;">Total BOQ Value</td><td class="td-right td-mono" id="boqTotal" style="font-weight:600;color:var(--accent);padding:12px 16px;"></td><td></td></tr>
+        </tfoot>
+      </table>
+    </div>
+  </div>
+
+  <!-- PURCHASES -->
+  <div id="page-purchases" class="page">
+    <div class="page-header">
+      <div class="page-header-text"><h2>Purchases</h2><p>Material and goods — cash, transfer, and direct.</p></div>
+      <div class="page-header-actions">
+        <button class="btn btn-success btn-sm" onclick="exportTableExcel('purchases')">↓ Excel</button>
+        <button class="btn btn-primary btn-sm" onclick="openModal('purchaseModal')">+ Add Purchase</button>
+      </div>
+    </div>
+    <div class="summary-grid" style="grid-template-columns:repeat(3,1fr)">
+      <div class="summary-card"><div class="label">Cash</div><div class="value accent td-mono" id="pCash">SAR 0.00</div></div>
+      <div class="summary-card"><div class="label">Transfer</div><div class="value accent td-mono" id="pTransfer">SAR 0.00</div></div>
+      <div class="summary-card"><div class="label">Total</div><div class="value red td-mono" id="pTotal">SAR 0.00</div></div>
+    </div>
+    <div class="table-wrap">
+      <div class="table-toolbar"><h3>Records</h3><div class="actions"><div class="filter-bar" style="padding:0;background:none;border:none;"><label>From</label><input type="date" id="purFrom" onchange="loadPurchases()"><label>To</label><input type="date" id="purTo" onchange="loadPurchases()"><button class="btn-clear" onclick="clearFilter('pur');loadPurchases()">✕ Clear</button></div></div></div>
+      <table><thead><tr><th>Date</th><th>Description</th><th>Supplier</th><th>Payment</th><th class="td-right">Amount (SAR)</th><th></th></tr></thead>
+      <tbody id="purchasesTableBody"><tr class="empty-row"><td colspan="6">No purchases yet.</td></tr></tbody></table>
+    </div>
+  </div>
+
+  <!-- PAYROLL -->
+  <div id="page-payroll" class="page">
+    <div class="page-header">
+      <div class="page-header-text"><h2>Payroll</h2><p>Salaries, overtime, termination, and medical insurance.</p></div>
+      <div class="page-header-actions">
+        <button class="btn btn-success btn-sm" onclick="exportTableExcel('payroll')">↓ Excel</button>
+        <button class="btn btn-primary btn-sm" onclick="openModal('payrollModal')">+ Add Entry</button>
+      </div>
+    </div>
+    <div class="summary-grid" style="grid-template-columns:repeat(4,1fr)">
+      <div class="summary-card"><div class="label">Salaries</div><div class="value green td-mono" id="paySalary">SAR 0.00</div></div>
+      <div class="summary-card"><div class="label">Overtime</div><div class="value green td-mono" id="payOvertime">SAR 0.00</div></div>
+      <div class="summary-card"><div class="label">Medical Ins.</div><div class="value green td-mono" id="payMedical">SAR 0.00</div></div>
+      <div class="summary-card"><div class="label">Termination</div><div class="value red td-mono" id="payTermination">SAR 0.00</div></div>
+    </div>
+    <div class="table-wrap">
+      <div class="table-toolbar"><h3>Records</h3><div class="actions"><div class="filter-bar" style="padding:0;background:none;border:none;"><label>From</label><input type="date" id="payFrom" onchange="loadPayroll()"><label>To</label><input type="date" id="payTo" onchange="loadPayroll()"><button class="btn-clear" onclick="clearFilter('pay');loadPayroll()">✕ Clear</button></div></div></div>
+      <table><thead><tr><th>Date</th><th>Employee</th><th>Type</th><th>Payment</th><th class="td-right">Amount (SAR)</th><th></th></tr></thead>
+      <tbody id="payrollTableBody"><tr class="empty-row"><td colspan="6">No entries yet.</td></tr></tbody></table>
+    </div>
+  </div>
+
+  <!-- DIRECT COSTS -->
+  <div id="page-direct" class="page">
+    <div class="page-header">
+      <div class="page-header-text"><h2>Direct Costs</h2><p>Commission, engineering, food, transportation.</p></div>
+      <div class="page-header-actions">
+        <button class="btn btn-success btn-sm" onclick="exportTableExcel('direct')">↓ Excel</button>
+        <button class="btn btn-primary btn-sm" onclick="openModal('directModal')">+ Add Entry</button>
+      </div>
+    </div>
+    <div class="summary-grid">
+      <div class="summary-card"><div class="label">Commission</div><div class="value blue td-mono" id="dirCommission">SAR 0.00</div></div>
+      <div class="summary-card"><div class="label">Engineering</div><div class="value blue td-mono" id="dirEngineering">SAR 0.00</div></div>
+      <div class="summary-card"><div class="label">Food</div><div class="value blue td-mono" id="dirFood">SAR 0.00</div></div>
+      <div class="summary-card"><div class="label">Transportation</div><div class="value blue td-mono" id="dirTransport">SAR 0.00</div></div>
+    </div>
+    <div class="table-wrap">
+      <div class="table-toolbar"><h3>Records</h3><div class="actions"><div class="filter-bar" style="padding:0;background:none;border:none;"><label>From</label><input type="date" id="dirFrom" onchange="loadDirect()"><label>To</label><input type="date" id="dirTo" onchange="loadDirect()"><button class="btn-clear" onclick="clearFilter('dir');loadDirect()">✕ Clear</button></div></div></div>
+      <table><thead><tr><th>Date</th><th>Description</th><th>Category</th><th>Payment</th><th class="td-right">Amount (SAR)</th><th></th></tr></thead>
+      <tbody id="directTableBody"><tr class="empty-row"><td colspan="6">No entries yet.</td></tr></tbody></table>
+    </div>
+  </div>
+
+  <!-- INDIRECT COSTS -->
+  <div id="page-indirect" class="page">
+    <div class="page-header">
+      <div class="page-header-text"><h2>Indirect Costs</h2><p>Electricity, water, factory rent, overhead.</p></div>
+      <div class="page-header-actions">
+        <button class="btn btn-success btn-sm" onclick="exportTableExcel('indirect')">↓ Excel</button>
+        <button class="btn btn-primary btn-sm" onclick="openModal('indirectModal')">+ Add Entry</button>
+      </div>
+    </div>
+    <div class="summary-grid" style="grid-template-columns:repeat(3,1fr)">
+      <div class="summary-card"><div class="label">Electricity</div><div class="value amber td-mono" id="indElec">SAR 0.00</div></div>
+      <div class="summary-card"><div class="label">Water</div><div class="value amber td-mono" id="indWater">SAR 0.00</div></div>
+      <div class="summary-card"><div class="label">Factory Rent</div><div class="value amber td-mono" id="indRent">SAR 0.00</div></div>
+    </div>
+    <div class="table-wrap">
+      <div class="table-toolbar"><h3>Records</h3><div class="actions"><div class="filter-bar" style="padding:0;background:none;border:none;"><label>From</label><input type="date" id="indFrom" onchange="loadIndirect()"><label>To</label><input type="date" id="indTo" onchange="loadIndirect()"><button class="btn-clear" onclick="clearFilter('ind');loadIndirect()">✕ Clear</button></div></div></div>
+      <table><thead><tr><th>Date</th><th>Description</th><th>Category</th><th>Payment</th><th class="td-right">Amount (SAR)</th><th></th></tr></thead>
+      <tbody id="indirectTableBody"><tr class="empty-row"><td colspan="6">No entries yet.</td></tr></tbody></table>
+    </div>
+  </div>
+
+  <!-- GOCI -->
+  <div id="page-goci" class="page">
+    <div class="page-header">
+      <div class="page-header-text"><h2>GOCI — Government & Official Costs</h2><p>Government fees, permits, and regulatory costs.</p></div>
+      <div class="page-header-actions">
+        <button class="btn btn-success btn-sm" onclick="exportTableExcel('goci')">↓ Excel</button>
+        <button class="btn btn-primary btn-sm" onclick="openModal('gociModal')">+ Add Entry</button>
+      </div>
+    </div>
+    <div class="summary-grid" style="grid-template-columns:repeat(3,1fr)">
+      <div class="summary-card"><div class="label">Gov. Fees</div><div class="value" style="color:var(--purple)" id="gociFees">SAR 0.00</div></div>
+      <div class="summary-card"><div class="label">Official Papers</div><div class="value" style="color:var(--purple)" id="gociPapers">SAR 0.00</div></div>
+      <div class="summary-card"><div class="label">Total GOCI</div><div class="value red td-mono" id="gociTotal">SAR 0.00</div></div>
+    </div>
+    <div class="table-wrap">
+      <div class="table-toolbar"><h3>Records</h3><div class="actions"><div class="filter-bar" style="padding:0;background:none;border:none;"><label>From</label><input type="date" id="gocFrom" onchange="loadGOCI()"><label>To</label><input type="date" id="gocTo" onchange="loadGOCI()"><button class="btn-clear" onclick="clearFilter('goc');loadGOCI()">✕ Clear</button></div></div></div>
+      <table><thead><tr><th>Date</th><th>Description</th><th>Category</th><th>Reference</th><th class="td-right">Amount (SAR)</th><th></th></tr></thead>
+      <tbody id="gociTableBody"><tr class="empty-row"><td colspan="6">No entries yet.</td></tr></tbody></table>
+    </div>
+  </div>
+
+</main>
+
+<!-- MODALS -->
+<div class="modal-overlay" id="projectModal">
+  <div class="modal"><h3>New Project</h3>
+    <div class="form-grid">
+      <div class="field span2"><label>Project Name</label><input type="text" id="projName" placeholder="e.g. Al-Riyadh Office Metalwork"/></div>
+      <div class="field span2"><label>Client Name</label><input type="text" id="projClient" placeholder="Client or company name"/></div>
+      <div class="field"><label>Start Date</label><input type="date" id="projStart"/></div>
+      <div class="field"><label>End Date (Est.)</label><input type="date" id="projEnd"/></div>
+      <div class="field span2"><label>Description / Notes</label><textarea id="projDesc" rows="3" placeholder="Optional notes..."></textarea></div>
+    </div>
+    <div class="modal-footer"><button class="btn" onclick="closeModal('projectModal')">Cancel</button><button class="btn btn-primary" onclick="saveProject()">Create Project</button></div>
+  </div>
+</div>
+
+<div class="modal-overlay" id="boqModal">
+  <div class="modal"><h3 id="boqModalTitle">Add BOQ Item</h3>
+    <input type="hidden" id="boqEditId"/>
+    <div class="form-grid">
+      <div class="field span2"><label>Description</label><input type="text" id="boqDesc" placeholder="e.g. Steel frame fabrication"/></div>
+      <div class="field"><label>Unit</label><input type="text" id="boqUnit" placeholder="e.g. m², ton, pcs"/></div>
+      <div class="field"><label>Quantity</label><input type="number" id="boqQty" placeholder="0" min="0"/></div>
+      <div class="field"><label>Unit Rate (SAR)</label><input type="number" id="boqRate" placeholder="0.00" min="0"/></div>
+      <div class="field"><label>Total (auto)</label><input type="text" id="boqItemTotal" readonly placeholder="Auto-calculated"/></div>
+      <div class="field span2"><label>Notes</label><input type="text" id="boqNotes" placeholder="Optional"/></div>
+    </div>
+    <div class="modal-footer"><button class="btn" onclick="closeModal('boqModal')">Cancel</button><button class="btn btn-primary" onclick="saveBOQ()">Save</button></div>
+  </div>
+</div>
+
+<div class="modal-overlay" id="purchaseModal">
+  <div class="modal"><h3 id="purModalTitle">Add Purchase</h3>
+    <input type="hidden" id="purEditId"/>
+    <div class="form-grid">
+      <div class="field"><label>Date</label><input type="date" id="purDate"/></div>
+      <div class="field"><label>Payment Method</label><select id="purMethod"><option value="cash">Cash</option><option value="transfer">Bank Transfer</option><option value="credit">Credit</option></select></div>
+      <div class="field span2"><label>Description</label><input type="text" id="purDesc" placeholder="What was purchased"/></div>
+      <div class="field span2"><label>Supplier / Vendor</label><input type="text" id="purSupplier" placeholder="Supplier name"/></div>
+      <div class="field"><label>Amount (SAR)</label><input type="number" id="purAmount" placeholder="0.00" min="0"/></div>
+      <div class="field"><label>Invoice / Ref No.</label><input type="text" id="purRef" placeholder="Optional"/></div>
+      <div class="field span2"><label>Notes</label><input type="text" id="purNotes" placeholder="Optional"/></div>
+    </div>
+    <div class="modal-footer"><button class="btn" onclick="closeModal('purchaseModal')">Cancel</button><button class="btn btn-primary" onclick="savePurchase()">Save</button></div>
+  </div>
+</div>
+
+<div class="modal-overlay" id="payrollModal">
+  <div class="modal"><h3 id="payModalTitle">Add Payroll Entry</h3>
+    <input type="hidden" id="payEditId"/>
+    <div class="form-grid">
+      <div class="field"><label>Date</label><input type="date" id="payDate"/></div>
+      <div class="field"><label>Type</label><select id="payType"><option value="salary">Salary</option><option value="overtime">Overtime</option><option value="medical_insurance">Medical Insurance</option><option value="termination">Termination / EOSB</option><option value="other">Other</option></select></div>
+      <div class="field span2"><label>Employee / Description</label><input type="text" id="payEmployee" placeholder="Employee name"/></div>
+      <div class="field"><label>Amount (SAR)</label><input type="number" id="payAmount" placeholder="0.00" min="0"/></div>
+      <div class="field"><label>Payment Method</label><select id="payMethod"><option value="bank">Bank Transfer</option><option value="cash">Cash</option><option value="wps">WPS</option></select></div>
+      <div class="field span2"><label>Notes</label><input type="text" id="payNotes" placeholder="Optional"/></div>
+    </div>
+    <div class="modal-footer"><button class="btn" onclick="closeModal('payrollModal')">Cancel</button><button class="btn btn-primary" onclick="savePayroll()">Save</button></div>
+  </div>
+</div>
+
+<div class="modal-overlay" id="directModal">
+  <div class="modal"><h3 id="dirModalTitle">Add Direct Cost</h3>
+    <input type="hidden" id="dirEditId"/>
+    <div class="form-grid">
+      <div class="field"><label>Date</label><input type="date" id="dirDate"/></div>
+      <div class="field"><label>Category</label><select id="dirCategory"><option value="commission">Commission</option><option value="engineering">Engineering Cost</option><option value="food">Food / Meals</option><option value="transportation">Transportation</option><option value="other">Other Direct</option></select></div>
+      <div class="field span2"><label>Description</label><input type="text" id="dirDesc" placeholder="Cost description"/></div>
+      <div class="field"><label>Amount (SAR)</label><input type="number" id="dirAmount" placeholder="0.00" min="0"/></div>
+      <div class="field"><label>Payment Method</label><select id="dirMethod"><option value="cash">Cash</option><option value="transfer">Bank Transfer</option><option value="credit">Credit</option></select></div>
+      <div class="field span2"><label>Notes</label><input type="text" id="dirNotes" placeholder="Optional"/></div>
+    </div>
+    <div class="modal-footer"><button class="btn" onclick="closeModal('directModal')">Cancel</button><button class="btn btn-primary" onclick="saveDirectCost()">Save</button></div>
+  </div>
+</div>
+
+<div class="modal-overlay" id="indirectModal">
+  <div class="modal"><h3 id="indModalTitle">Add Indirect Cost</h3>
+    <input type="hidden" id="indEditId"/>
+    <div class="form-grid">
+      <div class="field"><label>Date</label><input type="date" id="indDate"/></div>
+      <div class="field"><label>Category</label><select id="indCategory"><option value="electricity">Electricity</option><option value="water">Water</option><option value="rent">Factory Rent</option><option value="maintenance">Maintenance</option><option value="other">Other Overhead</option></select></div>
+      <div class="field span2"><label>Description</label><input type="text" id="indDesc" placeholder="Cost description"/></div>
+      <div class="field"><label>Amount (SAR)</label><input type="number" id="indAmount" placeholder="0.00" min="0"/></div>
+      <div class="field"><label>Payment Method</label><select id="indMethod"><option value="cash">Cash</option><option value="transfer">Bank Transfer</option><option value="direct_debit">Direct Debit</option></select></div>
+      <div class="field span2"><label>Notes</label><input type="text" id="indNotes" placeholder="Optional"/></div>
+    </div>
+    <div class="modal-footer"><button class="btn" onclick="closeModal('indirectModal')">Cancel</button><button class="btn btn-primary" onclick="saveIndirectCost()">Save</button></div>
+  </div>
+</div>
+
+<div class="modal-overlay" id="gociModal">
+  <div class="modal"><h3 id="gocModalTitle">Add GOCI Entry</h3>
+    <input type="hidden" id="gocEditId"/>
+    <div class="form-grid">
+      <div class="field"><label>Date</label><input type="date" id="gociDate"/></div>
+      <div class="field"><label>Category</label><select id="gociCategory"><option value="government_fees">Government Fees</option><option value="official_papers">Official Papers / Permits</option><option value="municipality">Municipality Fees</option><option value="chamber">Chamber of Commerce</option><option value="other">Other Official</option></select></div>
+      <div class="field span2"><label>Description</label><input type="text" id="gociDesc" placeholder="e.g. CR renewal fee"/></div>
+      <div class="field"><label>Amount (SAR)</label><input type="number" id="gociAmount" placeholder="0.00" min="0"/></div>
+      <div class="field"><label>Reference / Receipt No.</label><input type="text" id="gociRef" placeholder="Gov. reference number"/></div>
+      <div class="field span2"><label>Notes</label><input type="text" id="gociNotes" placeholder="Optional"/></div>
+    </div>
+    <div class="modal-footer"><button class="btn" onclick="closeModal('gociModal')">Cancel</button><button class="btn btn-primary" onclick="saveGOCI()">Save</button></div>
+  </div>
+</div>
+
+<!-- WhatsApp number modal -->
+<div class="modal-overlay" id="waModal">
+  <div class="modal" style="width:380px"><h3>Send WhatsApp Summary</h3>
+    <div class="form-grid full">
+      <div class="field"><label>WhatsApp Number (with country code)</label><input type="text" id="waNumber" placeholder="e.g. 966501234567"/></div>
+    </div>
+    <div class="modal-footer"><button class="btn" onclick="closeModal('waModal')">Cancel</button><button class="btn btn-whatsapp" onclick="openWhatsApp()">Open WhatsApp</button></div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+const SUPABASE_URL = 'https://spfztpokbpomqtiqgggz.supabase.co';
+const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNwZnp0cG9rYnBvbXF0aXFnZ2d6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODA1NzQzOTEsImV4cCI6MjA5NjE1MDM5MX0.fpoW_SwP8NddxV36GbbbImaFt9XuVmse8HBhTQAI9jY';
+
+let sb = null, currentProjectId = null, projects = [], currentPage = 'dashboard';
+let dashData = {};
+
+window.addEventListener('load', async () => {
+  sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+  try {
+    const { error } = await sb.from('apm_projects').select('id').limit(1);
+    if (error && error.code === '42P01') {
+      document.getElementById('statusDot').className = 'status-dot disconnected';
+      document.getElementById('statusText').textContent = 'Run SQL setup first';
+      showToast('Tables missing — run setup SQL in Supabase', 'error'); return;
+    }
+    document.getElementById('statusDot').className = 'status-dot connected';
+    document.getElementById('statusText').textContent = 'Connected';
+    loadProjects();
+  } catch(e) {
+    document.getElementById('statusDot').className = 'status-dot disconnected';
+    document.getElementById('statusText').textContent = 'Connection failed';
+    showToast('Connection failed: ' + e.message, 'error');
+  }
+  document.getElementById('boqQty').addEventListener('input', calcBOQTotal);
+  document.getElementById('boqRate').addEventListener('input', calcBOQTotal);
+});
+
+function calcBOQTotal() {
+  const q = parseFloat(document.getElementById('boqQty').value)||0;
+  const r = parseFloat(document.getElementById('boqRate').value)||0;
+  document.getElementById('boqItemTotal').value = 'SAR ' + (q*r).toLocaleString('en-SA',{minimumFractionDigits:2,maximumFractionDigits:2});
+}
+
+async function loadProjects() {
+  const { data } = await sb.from('apm_projects').select('*').order('created_at',{ascending:false});
+  projects = data || [];
+  const sel = document.getElementById('projectSelect');
+  const prev = sel.value;
+  sel.innerHTML = '<option value="">— Select Project —</option>';
+  projects.forEach(p => { const o = document.createElement('option'); o.value=p.id; o.textContent=p.name; sel.appendChild(o); });
+  if (prev && projects.find(p=>p.id===prev)) sel.value = prev;
+}
+
+function selectProject(id) {
+  currentProjectId = id || null;
+  if (!id) { document.getElementById('dashProjectName').textContent='Select a Project'; document.getElementById('dashProjectDesc').textContent='Choose a project from the sidebar.'; return; }
+  const proj = projects.find(p=>p.id===id);
+  if (proj) { document.getElementById('dashProjectName').textContent=proj.name; document.getElementById('dashProjectDesc').textContent=(proj.client?'Client: '+proj.client+' · ':'')+(proj.description||''); }
+  loadCurrentPage();
+}
+
+function navigate(page, el) {
+  document.querySelectorAll('.nav-item').forEach(n=>n.classList.remove('active'));
+  if (el) el.classList.add('active');
+  currentPage = page;
+  document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
+  document.getElementById('page-'+page).classList.add('active');
+  loadCurrentPage();
+}
+
+function loadCurrentPage() {
+  const map = {dashboard:loadDashboard,boq:loadBOQ,purchases:loadPurchases,payroll:loadPayroll,direct:loadDirect,indirect:loadIndirect,goci:loadGOCI,compare:loadCompare};
+  if (map[currentPage]) map[currentPage]();
+}
+
+const sar = v => 'SAR ' + Math.abs(v).toLocaleString('en-SA',{minimumFractionDigits:2,maximumFractionDigits:2});
+const sarN = v => parseFloat(v)||0;
+const sum = (arr,key) => arr.reduce((a,b)=>a+(parseFloat(b[key])||0),0);
+function getFilter(prefix) {
+  const f = document.getElementById(prefix+'From')?.value;
+  const t = document.getElementById(prefix+'To')?.value;
+  return {from:f||null,to:t||null};
+}
+function clearFilter(prefix) {
+  const f = document.getElementById(prefix+'From'); const t = document.getElementById(prefix+'To');
+  if(f) f.value=''; if(t) t.value='';
+}
+function applyDateFilter(data, filter) {
+  return data.filter(r => {
+    const d = r.entry_date;
+    if (filter.from && d < filter.from) return false;
+    if (filter.to && d > filter.to) return false;
+    return true;
+  });
+}
+
+// ---- DASHBOARD ----
+async function loadDashboard() {
+  if (!currentProjectId||!sb) return;
+  const pid = currentProjectId;
+  const [boq,pur,pay,dir,ind,goc] = await Promise.all([
+    sb.from('apm_boq').select('qty,unit_rate').eq('project_id',pid),
+    sb.from('apm_purchases').select('amount').eq('project_id',pid),
+    sb.from('apm_payroll').select('amount').eq('project_id',pid),
+    sb.from('apm_direct_costs').select('amount').eq('project_id',pid),
+    sb.from('apm_indirect_costs').select('amount').eq('project_id',pid),
+    sb.from('apm_goci').select('amount').eq('project_id',pid)
+  ]);
+  const tBOQ = (boq.data||[]).reduce((a,b)=>a+(b.qty||0)*(b.unit_rate||0),0);
+  const tPur=sum(pur.data||[],'amount'), tPay=sum(pay.data||[],'amount');
+  const tDir=sum(dir.data||[],'amount'), tInd=sum(ind.data||[],'amount'), tGoc=sum(goc.data||[],'amount');
+  const tCosts = tPur+tPay+tDir+tInd+tGoc;
+  const margin = tBOQ-tCosts;
+  const pct = tBOQ>0?((margin/tBOQ)*100).toFixed(1):'0.0';
+  dashData = {tBOQ,tPur,tPay,tDir,tInd,tGoc,tCosts,margin,pct};
+  document.getElementById('sumBOQ').textContent=sar(tBOQ);
+  document.getElementById('sumCosts').textContent=sar(tCosts);
+  document.getElementById('sumMargin').textContent=sar(margin);
+  document.getElementById('sumMarginPct').textContent=pct+'%';
+  document.getElementById('sumMargin').style.color=margin>=0?'var(--green)':'var(--red)';
+  document.getElementById('sumMarginPct').style.color=margin>=0?'var(--blue)':'var(--red)';
+  document.getElementById('brPurchases').textContent=sar(tPur);
+  document.getElementById('brPayroll').textContent=sar(tPay);
+  document.getElementById('brDirect').textContent=sar(tDir);
+  document.getElementById('brIndirect').textContent=sar(tInd);
+  document.getElementById('brGOCI').textContent=sar(tGoc);
+  if (tCosts>0) {
+    ['Purchases','Payroll','Direct','Indirect','GOCI'].forEach((k,i)=>{
+      const vals=[tPur,tPay,tDir,tInd,tGoc];
+      document.getElementById('bar'+k).style.width=((vals[i]/tCosts)*100)+'%';
+    });
+  }
+}
+
+// ---- BOQ ----
+async function loadBOQ() {
+  if (!currentProjectId||!sb) return;
+  const { data } = await sb.from('apm_boq').select('*').eq('project_id',currentProjectId).order('created_at');
+  const tbody=document.getElementById('boqTableBody'), tfoot=document.getElementById('boqTfoot');
+  if (!data||!data.length){tbody.innerHTML='<tr class="empty-row"><td colspan="7">No BOQ items yet.</td></tr>';tfoot.style.display='none';return;}
+  tfoot.style.display='';
+  let total=0;
+  tbody.innerHTML=data.map((r,i)=>{const t=(r.qty||0)*(r.unit_rate||0);total+=t;
+    return `<tr><td>${i+1}</td><td>${r.description}</td><td>${r.unit||'—'}</td><td class="td-right td-mono">${(r.qty||0).toLocaleString('en-SA')}</td><td class="td-right td-mono">${sar(r.unit_rate||0)}</td><td class="td-right td-mono" style="color:var(--accent)">${sar(t)}</td><td style="display:flex;gap:4px"><button class="btn btn-sm btn-icon" onclick="editBOQ('${r.id}','${escQ(r.description)}','${escQ(r.unit||'')}',${r.qty||0},${r.unit_rate||0},'${escQ(r.notes||'')}')">✎</button><button class="btn btn-danger btn-sm btn-icon" onclick="deleteRow('apm_boq','${r.id}',loadBOQ)">✕</button></td></tr>`;
+  }).join('');
+  document.getElementById('boqTotal').textContent=sar(total);
+}
+function editBOQ(id,desc,unit,qty,rate,notes){
+  document.getElementById('boqEditId').value=id;
+  document.getElementById('boqModalTitle').textContent='Edit BOQ Item';
+  document.getElementById('boqDesc').value=desc;
+  document.getElementById('boqUnit').value=unit;
+  document.getElementById('boqQty').value=qty;
+  document.getElementById('boqRate').value=rate;
+  document.getElementById('boqNotes').value=notes;
+  calcBOQTotal(); openModal('boqModal');
+}
+async function saveBOQ(){
+  if (!currentProjectId){showToast('Select a project first','error');return;}
+  const desc=document.getElementById('boqDesc').value.trim();
+  if (!desc){showToast('Description required','error');return;}
+  const editId=document.getElementById('boqEditId').value;
+  const payload={project_id:currentProjectId,description:desc,unit:document.getElementById('boqUnit').value,qty:parseFloat(document.getElementById('boqQty').value)||0,unit_rate:parseFloat(document.getElementById('boqRate').value)||0,notes:document.getElementById('boqNotes').value};
+  const { error } = editId ? await sb.from('apm_boq').update(payload).eq('id',editId) : await sb.from('apm_boq').insert(payload);
+  if (error){showToast(error.message,'error');return;}
+  document.getElementById('boqEditId').value='';
+  document.getElementById('boqModalTitle').textContent='Add BOQ Item';
+  closeModal('boqModal'); showToast(editId?'Updated':'BOQ item added','success'); loadBOQ();
+}
+
+// ---- PURCHASES ----
+async function loadPurchases(){
+  if (!currentProjectId||!sb) return;
+  const filter=getFilter('pur');
+  let q=sb.from('apm_purchases').select('*').eq('project_id',currentProjectId).order('entry_date',{ascending:false});
+  if(filter.from) q=q.gte('entry_date',filter.from);
+  if(filter.to) q=q.lte('entry_date',filter.to);
+  const { data } = await q;
+  const tbody=document.getElementById('purchasesTableBody');
+  if (!data||!data.length){tbody.innerHTML='<tr class="empty-row"><td colspan="6">No purchases recorded.</td></tr>';['pCash','pTransfer','pTotal'].forEach(id=>document.getElementById(id).textContent='SAR 0.00');return;}
+  document.getElementById('pCash').textContent=sar(sum(data.filter(r=>r.payment_method==='cash'),'amount'));
+  document.getElementById('pTransfer').textContent=sar(sum(data.filter(r=>r.payment_method==='transfer'),'amount'));
+  document.getElementById('pTotal').textContent=sar(sum(data,'amount'));
+  tbody.innerHTML=data.map(r=>`<tr><td>${r.entry_date}</td><td>${r.description}</td><td>${r.supplier||'—'}</td><td><span class="badge badge-purchase">${r.payment_method}</span></td><td class="td-right td-mono" style="color:var(--teal)">${sar(r.amount)}</td><td style="display:flex;gap:4px"><button class="btn btn-sm btn-icon" onclick="editPurchase('${r.id}','${r.entry_date}','${escQ(r.description)}','${escQ(r.supplier||'')}','${r.payment_method}',${r.amount},'${escQ(r.ref_no||'')}','${escQ(r.notes||'')}')">✎</button><button class="btn btn-danger btn-sm btn-icon" onclick="deleteRow('apm_purchases','${r.id}',loadPurchases)">✕</button></td></tr>`).join('');
+}
+function editPurchase(id,date,desc,sup,method,amt,ref,notes){
+  document.getElementById('purEditId').value=id;
+  document.getElementById('purModalTitle').textContent='Edit Purchase';
+  document.getElementById('purDate').value=date;
+  document.getElementById('purDesc').value=desc;
+  document.getElementById('purSupplier').value=sup;
+  document.getElementById('purMethod').value=method;
+  document.getElementById('purAmount').value=amt;
+  document.getElementById('purRef').value=ref;
+  document.getElementById('purNotes').value=notes;
+  openModal('purchaseModal');
+}
+async function savePurchase(){
+  if (!currentProjectId){showToast('Select a project first','error');return;}
+  const amt=parseFloat(document.getElementById('purAmount').value);
+  if (!amt||amt<=0){showToast('Enter a valid amount','error');return;}
+  const editId=document.getElementById('purEditId').value;
+  const payload={project_id:currentProjectId,entry_date:document.getElementById('purDate').value||today(),description:document.getElementById('purDesc').value,supplier:document.getElementById('purSupplier').value,payment_method:document.getElementById('purMethod').value,amount:amt,ref_no:document.getElementById('purRef').value,notes:document.getElementById('purNotes').value};
+  const { error } = editId ? await sb.from('apm_purchases').update(payload).eq('id',editId) : await sb.from('apm_purchases').insert(payload);
+  if (error){showToast(error.message,'error');return;}
+  document.getElementById('purEditId').value='';
+  document.getElementById('purModalTitle').textContent='Add Purchase';
+  closeModal('purchaseModal'); showToast(editId?'Updated':'Purchase saved','success'); loadPurchases();
+}
+
+// ---- PAYROLL ----
+async function loadPayroll(){
+  if (!currentProjectId||!sb) return;
+  const filter=getFilter('pay');
+  let q=sb.from('apm_payroll').select('*').eq('project_id',currentProjectId).order('entry_date',{ascending:false});
+  if(filter.from) q=q.gte('entry_date',filter.from);
+  if(filter.to) q=q.lte('entry_date',filter.to);
+  const { data } = await q;
+  const tbody=document.getElementById('payrollTableBody');
+  if (!data||!data.length){tbody.innerHTML='<tr class="empty-row"><td colspan="6">No payroll entries.</td></tr>';['paySalary','payOvertime','payMedical','payTermination'].forEach(id=>document.getElementById(id).textContent='SAR 0.00');return;}
+  document.getElementById('paySalary').textContent=sar(sum(data.filter(r=>r.pay_type==='salary'),'amount'));
+  document.getElementById('payOvertime').textContent=sar(sum(data.filter(r=>r.pay_type==='overtime'),'amount'));
+  document.getElementById('payMedical').textContent=sar(sum(data.filter(r=>r.pay_type==='medical_insurance'),'amount'));
+  document.getElementById('payTermination').textContent=sar(sum(data.filter(r=>r.pay_type==='termination'),'amount'));
+  const tl={salary:'Salary',overtime:'Overtime',medical_insurance:'Medical Ins.',termination:'Termination',other:'Other'};
+  tbody.innerHTML=data.map(r=>`<tr><td>${r.entry_date}</td><td>${r.employee}</td><td><span class="badge badge-payroll">${tl[r.pay_type]||r.pay_type}</span></td><td>${r.payment_method}</td><td class="td-right td-mono" style="color:var(--green)">${sar(r.amount)}</td><td style="display:flex;gap:4px"><button class="btn btn-sm btn-icon" onclick="editPayroll('${r.id}','${r.entry_date}','${escQ(r.employee)}','${r.pay_type}','${r.payment_method}',${r.amount},'${escQ(r.notes||'')}')">✎</button><button class="btn btn-danger btn-sm btn-icon" onclick="deleteRow('apm_payroll','${r.id}',loadPayroll)">✕</button></td></tr>`).join('');
+}
+function editPayroll(id,date,emp,type,method,amt,notes){
+  document.getElementById('payEditId').value=id;
+  document.getElementById('payModalTitle').textContent='Edit Payroll Entry';
+  document.getElementById('payDate').value=date;
+  document.getElementById('payEmployee').value=emp;
+  document.getElementById('payType').value=type;
+  document.getElementById('payMethod').value=method;
+  document.getElementById('payAmount').value=amt;
+  document.getElementById('payNotes').value=notes;
+  openModal('payrollModal');
+}
+async function savePayroll(){
+  if (!currentProjectId){showToast('Select a project first','error');return;}
+  const amt=parseFloat(document.getElementById('payAmount').value);
+  if (!amt||amt<=0){showToast('Enter a valid amount','error');return;}
+  const editId=document.getElementById('payEditId').value;
+  const payload={project_id:currentProjectId,entry_date:document.getElementById('payDate').value||today(),employee:document.getElementById('payEmployee').value,pay_type:document.getElementById('payType').value,payment_method:document.getElementById('payMethod').value,amount:amt,notes:document.getElementById('payNotes').value};
+  const { error } = editId ? await sb.from('apm_payroll').update(payload).eq('id',editId) : await sb.from('apm_payroll').insert(payload);
+  if (error){showToast(error.message,'error');return;}
+  document.getElementById('payEditId').value='';
+  document.getElementById('payModalTitle').textContent='Add Payroll Entry';
+  closeModal('payrollModal'); showToast(editId?'Updated':'Payroll entry saved','success'); loadPayroll();
+}
+
+// ---- DIRECT ----
+async function loadDirect(){
+  if (!currentProjectId||!sb) return;
+  const filter=getFilter('dir');
+  let q=sb.from('apm_direct_costs').select('*').eq('project_id',currentProjectId).order('entry_date',{ascending:false});
+  if(filter.from) q=q.gte('entry_date',filter.from);
+  if(filter.to) q=q.lte('entry_date',filter.to);
+  const { data } = await q;
+  const tbody=document.getElementById('directTableBody');
+  if (!data||!data.length){tbody.innerHTML='<tr class="empty-row"><td colspan="6">No direct cost entries.</td></tr>';['dirCommission','dirEngineering','dirFood','dirTransport'].forEach(id=>document.getElementById(id).textContent='SAR 0.00');return;}
+  document.getElementById('dirCommission').textContent=sar(sum(data.filter(r=>r.category==='commission'),'amount'));
+  document.getElementById('dirEngineering').textContent=sar(sum(data.filter(r=>r.category==='engineering'),'amount'));
+  document.getElementById('dirFood').textContent=sar(sum(data.filter(r=>r.category==='food'),'amount'));
+  document.getElementById('dirTransport').textContent=sar(sum(data.filter(r=>r.category==='transportation'),'amount'));
+  const cl={commission:'Commission',engineering:'Engineering',food:'Food',transportation:'Transport',other:'Other'};
+  tbody.innerHTML=data.map(r=>`<tr><td>${r.entry_date}</td><td>${r.description}</td><td><span class="badge badge-direct">${cl[r.category]||r.category}</span></td><td>${r.payment_method}</td><td class="td-right td-mono" style="color:var(--blue)">${sar(r.amount)}</td><td style="display:flex;gap:4px"><button class="btn btn-sm btn-icon" onclick="editDirect('${r.id}','${r.entry_date}','${escQ(r.description)}','${r.category}','${r.payment_method}',${r.amount},'${escQ(r.notes||'')}')">✎</button><button class="btn btn-danger btn-sm btn-icon" onclick="deleteRow('apm_direct_costs','${r.id}',loadDirect)">✕</button></td></tr>`).join('');
+}
+function editDirect(id,date,desc,cat,method,amt,notes){
+  document.getElementById('dirEditId').value=id;
+  document.getElementById('dirModalTitle').textContent='Edit Direct Cost';
+  document.getElementById('dirDate').value=date;
+  document.getElementById('dirDesc').value=desc;
+  document.getElementById('dirCategory').value=cat;
+  document.getElementById('dirMethod').value=method;
+  document.getElementById('dirAmount').value=amt;
+  document.getElementById('dirNotes').value=notes;
+  openModal('directModal');
+}
+async function saveDirectCost(){
+  if (!currentProjectId){showToast('Select a project first','error');return;}
+  const amt=parseFloat(document.getElementById('dirAmount').value);
+  if (!amt||amt<=0){showToast('Enter a valid amount','error');return;}
+  const editId=document.getElementById('dirEditId').value;
+  const payload={project_id:currentProjectId,entry_date:document.getElementById('dirDate').value||today(),description:document.getElementById('dirDesc').value,category:document.getElementById('dirCategory').value,payment_method:document.getElementById('dirMethod').value,amount:amt,notes:document.getElementById('dirNotes').value};
+  const { error } = editId ? await sb.from('apm_direct_costs').update(payload).eq('id',editId) : await sb.from('apm_direct_costs').insert(payload);
+  if (error){showToast(error.message,'error');return;}
+  document.getElementById('dirEditId').value='';
+  document.getElementById('dirModalTitle').textContent='Add Direct Cost';
+  closeModal('directModal'); showToast(editId?'Updated':'Direct cost saved','success'); loadDirect();
+}
+
+// ---- INDIRECT ----
+async function loadIndirect(){
+  if (!currentProjectId||!sb) return;
+  const filter=getFilter('ind');
+  let q=sb.from('apm_indirect_costs').select('*').eq('project_id',currentProjectId).order('entry_date',{ascending:false});
+  if(filter.from) q=q.gte('entry_date',filter.from);
+  if(filter.to) q=q.lte('entry_date',filter.to);
+  const { data } = await q;
+  const tbody=document.getElementById('indirectTableBody');
+  if (!data||!data.length){tbody.innerHTML='<tr class="empty-row"><td colspan="6">No indirect cost entries.</td></tr>';['indElec','indWater','indRent'].forEach(id=>document.getElementById(id).textContent='SAR 0.00');return;}
+  document.getElementById('indElec').textContent=sar(sum(data.filter(r=>r.category==='electricity'),'amount'));
+  document.getElementById('indWater').textContent=sar(sum(data.filter(r=>r.category==='water'),'amount'));
+  document.getElementById('indRent').textContent=sar(sum(data.filter(r=>r.category==='rent'),'amount'));
+  const cl={electricity:'Electricity',water:'Water',rent:'Factory Rent',maintenance:'Maintenance',other:'Other'};
+  tbody.innerHTML=data.map(r=>`<tr><td>${r.entry_date}</td><td>${r.description}</td><td><span class="badge badge-indirect">${cl[r.category]||r.category}</span></td><td>${r.payment_method}</td><td class="td-right td-mono" style="color:var(--amber)">${sar(r.amount)}</td><td style="display:flex;gap:4px"><button class="btn btn-sm btn-icon" onclick="editIndirect('${r.id}','${r.entry_date}','${escQ(r.description)}','${r.category}','${r.payment_method}',${r.amount},'${escQ(r.notes||'')}')">✎</button><button class="btn btn-danger btn-sm btn-icon" onclick="deleteRow('apm_indirect_costs','${r.id}',loadIndirect)">✕</button></td></tr>`).join('');
+}
+function editIndirect(id,date,desc,cat,method,amt,notes){
+  document.getElementById('indEditId').value=id;
+  document.getElementById('indModalTitle').textContent='Edit Indirect Cost';
+  document.getElementById('indDate').value=date;
+  document.getElementById('indDesc').value=desc;
+  document.getElementById('indCategory').value=cat;
+  document.getElementById('indMethod').value=method;
+  document.getElementById('indAmount').value=amt;
+  document.getElementById('indNotes').value=notes;
+  openModal('indirectModal');
+}
+async function saveIndirectCost(){
+  if (!currentProjectId){showToast('Select a project first','error');return;}
+  const amt=parseFloat(document.getElementById('indAmount').value);
+  if (!amt||amt<=0){showToast('Enter a valid amount','error');return;}
+  const editId=document.getElementById('indEditId').value;
+  const payload={project_id:currentProjectId,entry_date:document.getElementById('indDate').value||today(),description:document.getElementById('indDesc').value,category:document.getElementById('indCategory').value,payment_method:document.getElementById('indMethod').value,amount:amt,notes:document.getElementById('indNotes').value};
+  const { error } = editId ? await sb.from('apm_indirect_costs').update(payload).eq('id',editId) : await sb.from('apm_indirect_costs').insert(payload);
+  if (error){showToast(error.message,'error');return;}
+  document.getElementById('indEditId').value='';
+  document.getElementById('indModalTitle').textContent='Add Indirect Cost';
+  closeModal('indirectModal'); showToast(editId?'Updated':'Indirect cost saved','success'); loadIndirect();
+}
+
+// ---- GOCI ----
+async function loadGOCI(){
+  if (!currentProjectId||!sb) return;
+  const filter=getFilter('goc');
+  let q=sb.from('apm_goci').select('*').eq('project_id',currentProjectId).order('entry_date',{ascending:false});
+  if(filter.from) q=q.gte('entry_date',filter.from);
+  if(filter.to) q=q.lte('entry_date',filter.to);
+  const { data } = await q;
+  const tbody=document.getElementById('gociTableBody');
+  if (!data||!data.length){tbody.innerHTML='<tr class="empty-row"><td colspan="6">No GOCI entries.</td></tr>';['gociFees','gociPapers','gociTotal'].forEach(id=>document.getElementById(id).textContent='SAR 0.00');return;}
+  document.getElementById('gociFees').textContent=sar(sum(data.filter(r=>r.category==='government_fees'),'amount'));
+  document.getElementById('gociPapers').textContent=sar(sum(data.filter(r=>r.category==='official_papers'),'amount'));
+  document.getElementById('gociTotal').textContent=sar(sum(data,'amount'));
+  const cl={government_fees:'Gov. Fees',official_papers:'Official Papers',municipality:'Municipality',chamber:'Chamber',other:'Other'};
+  tbody.innerHTML=data.map(r=>`<tr><td>${r.entry_date}</td><td>${r.description}</td><td><span class="badge badge-goci">${cl[r.category]||r.category}</span></td><td>${r.ref_no||'—'}</td><td class="td-right td-mono" style="color:var(--purple)">${sar(r.amount)}</td><td style="display:flex;gap:4px"><button class="btn btn-sm btn-icon" onclick="editGOCI('${r.id}','${r.entry_date}','${escQ(r.description)}','${r.category}','${escQ(r.ref_no||'')}',${r.amount},'${escQ(r.notes||'')}')">✎</button><button class="btn btn-danger btn-sm btn-icon" onclick="deleteRow('apm_goci','${r.id}',loadGOCI)">✕</button></td></tr>`).join('');
+}
+function editGOCI(id,date,desc,cat,ref,amt,notes){
+  document.getElementById('gocEditId').value=id;
+  document.getElementById('gocModalTitle').textContent='Edit GOCI Entry';
+  document.getElementById('gociDate').value=date;
+  document.getElementById('gociDesc').value=desc;
+  document.getElementById('gociCategory').value=cat;
+  document.getElementById('gociRef').value=ref;
+  document.getElementById('gociAmount').value=amt;
+  document.getElementById('gociNotes').value=notes;
+  openModal('gociModal');
+}
+async function saveGOCI(){
+  if (!currentProjectId){showToast('Select a project first','error');return;}
+  const amt=parseFloat(document.getElementById('gociAmount').value);
+  if (!amt||amt<=0){showToast('Enter a valid amount','error');return;}
+  const editId=document.getElementById('gocEditId').value;
+  const payload={project_id:currentProjectId,entry_date:document.getElementById('gociDate').value||today(),description:document.getElementById('gociDesc').value,category:document.getElementById('gociCategory').value,ref_no:document.getElementById('gociRef').value,amount:amt,notes:document.getElementById('gociNotes').value};
+  const { error } = editId ? await sb.from('apm_goci').update(payload).eq('id',editId) : await sb.from('apm_goci').insert(payload);
+  if (error){showToast(error.message,'error');return;}
+  document.getElementById('gocEditId').value='';
+  document.getElementById('gocModalTitle').textContent='Add GOCI Entry';
+  closeModal('gociModal'); showToast(editId?'Updated':'GOCI entry saved','success'); loadGOCI();
+}
+
+// ---- COMPARE PROJECTS ----
+async function loadCompare(){
+  if (!sb||!projects.length) return;
+  const rows = ['BOQ Value','Purchases','Payroll','Direct Costs','Indirect Costs','GOCI','Total Costs','Net Margin','Margin %'];
+  const head = document.getElementById('compareHead');
+  const body = document.getElementById('compareBody');
+  head.innerHTML = '<th>Category</th>' + projects.map(p=>`<th class="proj-name">${p.name}</th>`).join('');
+  body.innerHTML = '<tr><td colspan="'+(projects.length+1)+'" style="text-align:center;color:var(--text3);padding:20px;">Loading...</td></tr>';
+  const allData = await Promise.all(projects.map(async p=>{
+    const pid=p.id;
+    const [boq,pur,pay,dir,ind,goc] = await Promise.all([
+      sb.from('apm_boq').select('qty,unit_rate').eq('project_id',pid),
+      sb.from('apm_purchases').select('amount').eq('project_id',pid),
+      sb.from('apm_payroll').select('amount').eq('project_id',pid),
+      sb.from('apm_direct_costs').select('amount').eq('project_id',pid),
+      sb.from('apm_indirect_costs').select('amount').eq('project_id',pid),
+      sb.from('apm_goci').select('amount').eq('project_id',pid)
+    ]);
+    const tBOQ=(boq.data||[]).reduce((a,b)=>a+(b.qty||0)*(b.unit_rate||0),0);
+    const tPur=sum(pur.data||[],'amount'),tPay=sum(pay.data||[],'amount');
+    const tDir=sum(dir.data||[],'amount'),tInd=sum(ind.data||[],'amount'),tGoc=sum(goc.data||[],'amount');
+    const tCosts=tPur+tPay+tDir+tInd+tGoc;
+    const margin=tBOQ-tCosts;
+    const pct=tBOQ>0?((margin/tBOQ)*100).toFixed(1)+'%':'—';
+    return [tBOQ,tPur,tPay,tDir,tInd,tGoc,tCosts,margin,pct];
+  }));
+  body.innerHTML = rows.map((label,i)=>{
+    const isMargin = label==='Net Margin';
+    const isPct = label==='Margin %';
+    const cells = allData.map(d=>{
+      if(isPct) return `<td class="td-right td-mono">${d[i]}</td>`;
+      const v=d[i];
+      let color='';
+      if(isMargin) color=v>=0?'color:var(--green)':'color:var(--red)';
+      if(label==='BOQ Value') color='color:var(--accent)';
+      if(label==='Total Costs') color='color:var(--red)';
+      return `<td class="td-right td-mono" style="${color}">${sar(v)}</td>`;
+    }).join('');
+    const bold = ['BOQ Value','Total Costs','Net Margin','Margin %'].includes(label)?'font-weight:500':'';
+    return `<tr><td style="${bold}">${label}</td>${cells}</tr>`;
+  }).join('');
+}
+
+// ---- SAVE PROJECT ----
+async function saveProject(){
+  const name=document.getElementById('projName').value.trim();
+  if (!name){showToast('Project name required','error');return;}
+  const { error } = await sb.from('apm_projects').insert({name,client:document.getElementById('projClient').value,start_date:document.getElementById('projStart').value||null,end_date:document.getElementById('projEnd').value||null,description:document.getElementById('projDesc').value});
+  if (error){showToast('Error: '+error.message,'error');return;}
+  closeModal('projectModal'); showToast('Project created','success');
+  await loadProjects();
+  const sel=document.getElementById('projectSelect');
+  sel.value=projects[0]?.id||''; selectProject(projects[0]?.id||'');
+}
+
+// ---- DELETE ----
+async function deleteRow(table,id,reloadFn){
+  if (!confirm('Delete this record?')) return;
+  const { error } = await sb.from(table).delete().eq('id',id);
+  if (error){showToast(error.message,'error');return;}
+  showToast('Deleted','success'); reloadFn();
+  if (currentPage==='dashboard') loadDashboard();
+}
+
+// ---- WHATSAPP ----
+function sendWhatsApp(){
+  if (!currentProjectId){showToast('Select a project first','error');return;}
+  openModal('waModal');
+}
+function openWhatsApp(){
+  const num=document.getElementById('waNumber').value.trim().replace(/\D/g,'');
+  if (!num){showToast('Enter a WhatsApp number','error');return;}
+  const proj=projects.find(p=>p.id===currentProjectId);
+  const d=dashData;
+  const msg=`*APM Metal Works — Cost Summary*\n*Project:* ${proj?.name||'—'}\n\n📋 BOQ Value: ${sar(d.tBOQ||0)}\n\n*Costs:*\n• Purchases: ${sar(d.tPur||0)}\n• Payroll: ${sar(d.tPay||0)}\n• Direct Costs: ${sar(d.tDir||0)}\n• Indirect Costs: ${sar(d.tInd||0)}\n• GOCI: ${sar(d.tGoc||0)}\n\n💰 *Total Costs: ${sar(d.tCosts||0)}*\n📈 *Net Margin: ${sar(d.margin||0)} (${d.pct||0}%)*`;
+  closeModal('waModal');
+  window.open('https://wa.me/'+num+'?text='+encodeURIComponent(msg),'_blank');
+}
+
+// ---- EXPORT PDF ----
+async function exportPDF(){
+  if (!currentProjectId){showToast('Select a project first','error');return;}
+  const proj=projects.find(p=>p.id===currentProjectId);
+  const { jsPDF } = window.jspdf;
+  const doc = new jsPDF();
+  const d=dashData;
+  doc.setFontSize(16); doc.setFont('helvetica','bold');
+  doc.text('APM Metal Works',14,20);
+  doc.setFontSize(12); doc.setFont('helvetica','normal');
+  doc.text('Project Cost Report — '+proj?.name,14,28);
+  doc.setFontSize(10); doc.text('Generated: '+new Date().toLocaleDateString('en-SA'),14,35);
+  doc.autoTable({startY:42,head:[['Category','Amount (SAR)']],body:[
+    ['BOQ Value (Contract)',sar(d.tBOQ||0)],
+    ['Purchases',sar(d.tPur||0)],
+    ['Payroll',sar(d.tPay||0)],
+    ['Direct Costs',sar(d.tDir||0)],
+    ['Indirect Costs',sar(d.tInd||0)],
+    ['GOCI',sar(d.tGoc||0)],
+    ['TOTAL COSTS',sar(d.tCosts||0)],
+    ['NET MARGIN',sar(d.margin||0)+' ('+d.pct+'%)'],
+  ],styles:{fontSize:11},headStyles:{fillColor:[30,30,30]},
+  didParseCell:(data)=>{ if(data.row.index===6||data.row.index===7) data.cell.styles.fontStyle='bold'; }
+  });
+  doc.save('APM_'+proj?.name.replace(/\s+/g,'_')+'_Report.pdf');
+  showToast('PDF downloaded','success');
+}
+
+// ---- EXPORT EXCEL (Dashboard summary) ----
+async function exportExcel(){
+  if (!currentProjectId){showToast('Select a project first','error');return;}
+  const proj=projects.find(p=>p.id===currentProjectId);
+  const d=dashData;
+  const wb=XLSX.utils.book_new();
+  const summaryData=[
+    ['APM Metal Works — Cost Report'],
+    ['Project',proj?.name],
+    ['Client',proj?.client||'—'],
+    ['Generated',new Date().toLocaleDateString('en-SA')],
+    [],
+    ['Category','Amount (SAR)'],
+    ['BOQ Value',d.tBOQ||0],['Purchases',d.tPur||0],['Payroll',d.tPay||0],
+    ['Direct Costs',d.tDir||0],['Indirect Costs',d.tInd||0],['GOCI',d.tGoc||0],
+    ['Total Costs',d.tCosts||0],['Net Margin',d.margin||0],['Margin %',(d.pct||0)+'%']
+  ];
+  const ws=XLSX.utils.aoa_to_sheet(summaryData);
+  ws['!cols']=[{wch:25},{wch:20}];
+  XLSX.utils.book_append_sheet(wb,ws,'Summary');
+  await appendDetailSheets(wb,currentProjectId);
+  XLSX.writeFile(wb,'APM_'+proj?.name.replace(/\s+/g,'_')+'.xlsx');
+  showToast('Excel downloaded','success');
+}
+
+async function appendDetailSheets(wb,pid){
+  const [boq,pur,pay,dir,ind,goc]=await Promise.all([
+    sb.from('apm_boq').select('*').eq('project_id',pid).order('created_at'),
+    sb.from('apm_purchases').select('*').eq('project_id',pid).order('entry_date'),
+    sb.from('apm_payroll').select('*').eq('project_id',pid).order('entry_date'),
+    sb.from('apm_direct_costs').select('*').eq('project_id',pid).order('entry_date'),
+    sb.from('apm_indirect_costs').select('*').eq('project_id',pid).order('entry_date'),
+    sb.from('apm_goci').select('*').eq('project_id',pid).order('entry_date'),
+  ]);
+  const addSheet=(name,headers,rows)=>{
+    const ws=XLSX.utils.aoa_to_sheet([headers,...rows]);
+    ws['!cols']=headers.map(()=>({wch:18}));
+    XLSX.utils.book_append_sheet(wb,ws,name);
+  };
+  addSheet('BOQ',['Description','Unit','Qty','Unit Rate','Total'],(boq.data||[]).map(r=>[r.description,r.unit||'',r.qty||0,r.unit_rate||0,(r.qty||0)*(r.unit_rate||0)]));
+  addSheet('Purchases',['Date','Description','Supplier','Payment','Amount',' Ref',' Notes'],(pur.data||[]).map(r=>[r.entry_date,r.description,r.supplier||'',r.payment_method,r.amount,r.ref_no||'',r.notes||'']));
+  addSheet('Payroll',['Date','Employee','Type','Payment','Amount','Notes'],(pay.data||[]).map(r=>[r.entry_date,r.employee,r.pay_type,r.payment_method,r.amount,r.notes||'']));
+  addSheet('Direct Costs',['Date','Description','Category','Payment','Amount','Notes'],(dir.data||[]).map(r=>[r.entry_date,r.description,r.category,r.payment_method,r.amount,r.notes||'']));
+  addSheet('Indirect Costs',['Date','Description','Category','Payment','Amount','Notes'],(ind.data||[]).map(r=>[r.entry_date,r.description,r.category,r.payment_method,r.amount,r.notes||'']));
+  addSheet('GOCI',['Date','Description','Category','Ref No','Amount','Notes'],(goc.data||[]).map(r=>[r.entry_date,r.description,r.category,r.ref_no||'',r.amount,r.notes||'']));
+}
+
+async function exportTableExcel(type){
+  if (!currentProjectId){showToast('Select a project first','error');return;}
+  const proj=projects.find(p=>p.id===currentProjectId);
+  const wb=XLSX.utils.book_new();
+  await appendDetailSheets(wb,currentProjectId);
+  const sheetMap={boq:'BOQ',purchases:'Purchases',payroll:'Payroll',direct:'Direct Costs',indirect:'Indirect Costs',goci:'GOCI'};
+  XLSX.writeFile(wb,'APM_'+proj?.name.replace(/\s+/g,'_')+'_'+sheetMap[type]+'.xlsx');
+  showToast('Excel downloaded','success');
+}
+
+// ---- COMPARE EXPORTS ----
+async function exportComparePDF(){
+  const { jsPDF } = window.jspdf;
+  const doc = new jsPDF({orientation:'landscape'});
+  doc.setFontSize(14); doc.setFont('helvetica','bold');
+  doc.text('APM Metal Works — Project Comparison',14,20);
+  doc.setFontSize(10); doc.setFont('helvetica','normal');
+  doc.text('Generated: '+new Date().toLocaleDateString('en-SA'),14,27);
+  const rows=['BOQ Value','Purchases','Payroll','Direct Costs','Indirect Costs','GOCI','Total Costs','Net Margin','Margin %'];
+  const head=['Category',...projects.map(p=>p.name)];
+  const allData = await Promise.all(projects.map(async p=>{
+    const pid=p.id;
+    const [boq,pur,pay,dir,ind,goc]=await Promise.all([
+      sb.from('apm_boq').select('qty,unit_rate').eq('project_id',pid),
+      sb.from('apm_purchases').select('amount').eq('project_id',pid),
+      sb.from('apm_payroll').select('amount').eq('project_id',pid),
+      sb.from('apm_direct_costs').select('amount').eq('project_id',pid),
+      sb.from('apm_indirect_costs').select('amount').eq('project_id',pid),
+      sb.from('apm_goci').select('amount').eq('project_id',pid),
+    ]);
+    const tBOQ=(boq.data||[]).reduce((a,b)=>a+(b.qty||0)*(b.unit_rate||0),0);
+    const tPur=sum(pur.data||[],'amount'),tPay=sum(pay.data||[],'amount');
+    const tDir=sum(dir.data||[],'amount'),tInd=sum(ind.data||[],'amount'),tGoc=sum(goc.data||[],'amount');
+    const tCosts=tPur+tPay+tDir+tInd+tGoc; const margin=tBOQ-tCosts;
+    return [tBOQ,tPur,tPay,tDir,tInd,tGoc,tCosts,margin,tBOQ>0?((margin/tBOQ)*100).toFixed(1)+'%':'—'];
+  }));
+  const body=rows.map((label,i)=>[label,...allData.map(d=>i===8?d[i]:sar(d[i]))]);
+  doc.autoTable({startY:32,head:[head],body,styles:{fontSize:9},headStyles:{fillColor:[30,30,30]}});
+  doc.save('APM_Project_Comparison.pdf');
+  showToast('PDF downloaded','success');
+}
+async function exportCompareExcel(){
+  const wb=XLSX.utils.book_new();
+  const rows=['BOQ Value','Purchases','Payroll','Direct Costs','Indirect Costs','GOCI','Total Costs','Net Margin','Margin %'];
+  const allData=await Promise.all(projects.map(async p=>{
+    const pid=p.id;
+    const [boq,pur,pay,dir,ind,goc]=await Promise.all([
+      sb.from('apm_boq').select('qty,unit_rate').eq('project_id',pid),
+      sb.from('apm_purchases').select('amount').eq('project_id',pid),
+      sb.from('apm_payroll').select('amount').eq('project_id',pid),
+      sb.from('apm_direct_costs').select('amount').eq('project_id',pid),
+      sb.from('apm_indirect_costs').select('amount').eq('project_id',pid),
+      sb.from('apm_goci').select('amount').eq('project_id',pid),
+    ]);
+    const tBOQ=(boq.data||[]).reduce((a,b)=>a+(b.qty||0)*(b.unit_rate||0),0);
+    const tPur=sum(pur.data||[],'amount'),tPay=sum(pay.data||[],'amount');
+    const tDir=sum(dir.data||[],'amount'),tInd=sum(ind.data||[],'amount'),tGoc=sum(goc.data||[],'amount');
+    const tCosts=tPur+tPay+tDir+tInd+tGoc; const margin=tBOQ-tCosts;
+    return [tBOQ,tPur,tPay,tDir,tInd,tGoc,tCosts,margin,tBOQ>0?((margin/tBOQ)*100).toFixed(1)+'%':'—'];
+  }));
+  const sheetData=[['Category',...projects.map(p=>p.name)],...rows.map((label,i)=>[label,...allData.map(d=>d[i])])];
+  const ws=XLSX.utils.aoa_to_sheet(sheetData);
+  XLSX.utils.book_append_sheet(wb,ws,'Comparison');
+  XLSX.writeFile(wb,'APM_Project_Comparison.xlsx');
+  showToast('Excel downloaded','success');
+}
+
+// ---- UTILS ----
+function today(){ return new Date().toISOString().split('T')[0]; }
+function escQ(s){ return String(s).replace(/'/g,"\\'"); }
+function openModal(id){ document.getElementById(id).classList.add('open'); }
+function closeModal(id){ document.getElementById(id).classList.remove('open'); }
+document.addEventListener('click',e=>{ if(e.target.classList.contains('modal-overlay')) e.target.classList.remove('open'); });
+let toastTimer;
+function showToast(msg,type=''){
+  const t=document.getElementById('toast');
+  t.textContent=msg; t.className='toast show '+type;
+  clearTimeout(toastTimer); toastTimer=setTimeout(()=>t.classList.remove('show'),3000);
+}
+</script>
+</body>
+</html>
