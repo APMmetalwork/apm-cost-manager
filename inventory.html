@@ -1,0 +1,258 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Inventory — APM Metal Works</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Saira:wght@500;600;700;800&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@500;600&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+  :root{--bg0:#0B0E12;--bg1:#12161C;--bg2:#1A2027;--bg3:#212935;--line:#242C36;--line-hi:#33404E;--text:#E8ECF1;--muted:#8C97A6;--amber:#F08C2E;--amber-soft:rgba(240,140,46,.14);--green:#3FB970;--red:#E5534B;--blue:#4D9DE0;--yellow:#E8C547;--radius:12px}
+  *{margin:0;padding:0;box-sizing:border-box}
+  body{background:var(--bg0);color:var(--text);font-family:'Inter',system-ui,sans-serif;min-height:100vh}
+  button{font-family:inherit}
+  .topbar{display:flex;align-items:center;justify-content:space-between;gap:16px;padding:14px 24px;border-bottom:1px solid var(--line);background:rgba(18,22,28,.85);backdrop-filter:blur(8px);position:sticky;top:0;z-index:40}
+  .brand{display:flex;align-items:center;gap:12px;text-decoration:none;color:var(--text)}
+  .mark{width:36px;height:36px;border-radius:9px;background:linear-gradient(145deg,#222A33,#141A21);border:1px solid var(--line-hi);display:grid;place-items:center;font-family:'Saira',sans-serif;font-weight:800;font-size:14px;color:var(--amber)}
+  .brand b{font-family:'Saira',sans-serif;font-weight:700;font-size:15px}
+  .brand small{display:block;color:var(--muted);font-size:11px;letter-spacing:.1em;text-transform:uppercase}
+  .btn{border:1px solid var(--line-hi);background:var(--bg2);color:var(--text);padding:9px 16px;border-radius:9px;font-size:13.5px;font-weight:600;cursor:pointer;transition:border-color .15s,background .15s}
+  .btn:hover{border-color:var(--amber)}
+  .btn.primary{background:var(--amber);border-color:var(--amber);color:#1A1208}.btn.primary:hover{background:#FFA04A}
+  .btn.danger{color:var(--red);border-color:rgba(229,83,75,.5)}
+  .btn.ghost{background:transparent}.btn.sm{padding:6px 11px;font-size:12.5px}
+  .wrap{max-width:1180px;margin:0 auto;padding:24px}
+  .stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:14px;margin-bottom:22px}
+  .stat{background:linear-gradient(180deg,var(--bg2),var(--bg1));border:1px solid var(--line);border-radius:var(--radius);padding:16px 18px}
+  .stat .lbl{color:var(--muted);font-size:11.5px;letter-spacing:.1em;text-transform:uppercase;font-weight:600}
+  .stat .val{font-family:'JetBrains Mono',monospace;font-size:23px;font-weight:600;margin-top:6px}
+  .stat .val.amber{color:var(--amber)}.stat .val.green{color:var(--green)}.stat .val.red{color:var(--red)}
+  .alertbar{display:flex;align-items:center;gap:10px;background:rgba(229,83,75,.08);border:1px solid rgba(229,83,75,.35);border-radius:var(--radius);padding:12px 16px;margin-bottom:20px;font-size:13.5px}
+  .alertbar b{color:var(--red)}
+  .toolbar{display:flex;align-items:center;gap:14px;flex-wrap:wrap;margin-bottom:18px}
+  .search{flex:1;min-width:200px;max-width:340px;background:var(--bg1);border:1px solid var(--line);border-radius:9px;color:var(--text);padding:10px 14px;font-size:13.5px;font-family:inherit}
+  .search:focus{outline:none;border-color:var(--amber)}
+  .filterpills{display:flex;gap:6px;flex-wrap:wrap}
+  .fp{border:1px solid var(--line);background:var(--bg1);color:var(--muted);padding:7px 13px;border-radius:999px;font-size:12.5px;font-weight:600;cursor:pointer}
+  .fp.active{color:var(--text);border-color:var(--amber);background:var(--amber-soft)}
+  .panel{background:var(--bg1);border:1px solid var(--line);border-radius:var(--radius);overflow:hidden}
+  table{width:100%;border-collapse:collapse;font-size:13.5px}
+  th{text-align:left;padding:12px 16px;color:var(--muted);font-size:11.5px;letter-spacing:.09em;text-transform:uppercase;font-weight:600;border-bottom:1px solid var(--line);background:var(--bg2);white-space:nowrap}
+  td{padding:13px 16px;border-bottom:1px solid var(--line);vertical-align:middle}
+  tr:last-child td{border-bottom:none}
+  tbody tr.click{cursor:pointer}tbody tr.click:hover{background:rgba(255,255,255,.02)}
+  tbody tr.low{background:rgba(229,83,75,.05)}
+  .mono{font-family:'JetBrains Mono',monospace;font-size:12.5px}.muted{color:var(--muted)}
+  .pill{display:inline-block;padding:4px 11px;border-radius:999px;font-size:11.5px;font-weight:600;border:1px solid}
+  .stockbadge{font-family:'JetBrains Mono',monospace;font-weight:600}
+  .empty-state{padding:48px 20px;text-align:center;color:var(--muted);font-size:14px}.empty-state b{color:var(--text)}
+  .rowbtns{display:flex;gap:6px;justify-content:flex-end}
+  .iconbtn{border:1px solid var(--line-hi);background:transparent;color:var(--muted);width:30px;height:30px;border-radius:8px;cursor:pointer;font-size:13px}
+  .iconbtn:hover{color:var(--text);border-color:var(--amber)}
+  .qbtn{border:1px solid var(--line-hi);background:transparent;color:var(--muted);width:28px;height:28px;border-radius:7px;cursor:pointer;font-size:14px;font-weight:700}
+  .qbtn:hover{color:var(--text);border-color:var(--amber)}
+  .qbtn.minus:hover{border-color:var(--red);color:var(--red)}.qbtn.plus:hover{border-color:var(--green);color:var(--green)}
+  .overlay{position:fixed;inset:0;background:rgba(5,8,12,.7);backdrop-filter:blur(3px);display:none;align-items:flex-start;justify-content:center;z-index:60;padding:6vh 16px;overflow-y:auto}
+  .overlay.open{display:flex}
+  .modal{background:var(--bg1);border:1px solid var(--line-hi);border-radius:16px;width:100%;max-width:520px;padding:24px}
+  .modal h2{font-family:'Saira',sans-serif;font-size:19px;font-weight:700;margin-bottom:18px}
+  .field{margin-bottom:14px}
+  .field label{display:block;color:var(--muted);font-size:12px;font-weight:600;letter-spacing:.05em;text-transform:uppercase;margin-bottom:6px}
+  .field input,.field select{width:100%;background:var(--bg0);border:1px solid var(--line-hi);border-radius:9px;color:var(--text);padding:10px 12px;font-size:14px;font-family:inherit}
+  .field input:focus,.field select:focus{outline:none;border-color:var(--amber)}
+  .frow{display:grid;grid-template-columns:1fr 1fr;gap:12px}@media(max-width:520px){.frow{grid-template-columns:1fr}}
+  .modal-foot{display:flex;justify-content:space-between;gap:10px;margin-top:20px}.modal-foot .right{display:flex;gap:10px;margin-left:auto}
+  #toasts{position:fixed;bottom:22px;right:22px;display:flex;flex-direction:column;gap:9px;z-index:90}
+  .toast{background:var(--bg2);border:1px solid var(--line-hi);border-left:3px solid var(--amber);border-radius:10px;padding:12px 16px;font-size:13.5px;min-width:230px;animation:slidein .22s ease}
+  .toast.err{border-left-color:var(--red)}.toast.ok{border-left-color:var(--green)}
+  @keyframes slidein{from{transform:translateX(20px);opacity:0}to{transform:none;opacity:1}}
+  .loading{padding:60px;text-align:center;color:var(--muted)}
+</style>
+</head>
+<body>
+<div class="topbar">
+  <a class="brand" href="index.html"><div class="mark">AP</div><div><b>Inventory</b><small>APM Metal Works</small></div></a>
+  <div class="actions"><button class="btn primary" onclick="openItemModal()">+ New item</button></div>
+</div>
+<div class="wrap">
+  <div class="stats">
+    <div class="stat"><div class="lbl">SKUs tracked</div><div class="val" id="stCount">—</div></div>
+    <div class="stat"><div class="lbl">Stock value</div><div class="val amber" id="stValue">—</div></div>
+    <div class="stat"><div class="lbl">Low stock</div><div class="val red" id="stLow">—</div></div>
+    <div class="stat"><div class="lbl">Out of stock</div><div class="val red" id="stOut">—</div></div>
+  </div>
+  <div id="alertZone"></div>
+  <div class="toolbar">
+    <input class="search" id="search" placeholder="Search material, SKU, supplier…" oninput="renderList()">
+    <div class="filterpills" id="filters">
+      <button class="fp active" data-f="all" onclick="setFilter('all')">All</button>
+      <button class="fp" data-f="steel" onclick="setFilter('steel')">Steel</button>
+      <button class="fp" data-f="paint" onclick="setFilter('paint')">Paint</button>
+      <button class="fp" data-f="consumable" onclick="setFilter('consumable')">Consumables</button>
+      <button class="fp" data-f="hardware" onclick="setFilter('hardware')">Hardware</button>
+      <button class="fp" data-f="low" onclick="setFilter('low')">⚠ Low</button>
+    </div>
+  </div>
+  <div id="listBody"><div class="loading">Loading inventory…</div></div>
+</div>
+
+<div class="overlay" id="itemOverlay">
+  <div class="modal">
+    <h2 id="itemTitle">New item</h2>
+    <input type="hidden" id="mId">
+    <div class="field"><label>Material name *</label><input id="mName" placeholder="MS Plate 10mm"></div>
+    <div class="frow">
+      <div class="field"><label>SKU / code</label><input id="mSku" placeholder="auto if blank"></div>
+      <div class="field"><label>Category</label>
+        <select id="mCat"><option value="steel">Steel</option><option value="paint">Paint</option><option value="consumable">Consumable</option><option value="hardware">Hardware</option><option value="other">Other</option></select>
+      </div>
+    </div>
+    <div class="frow">
+      <div class="field"><label>Quantity in stock</label><input id="mQty" type="number" min="0" step="any" placeholder="0"></div>
+      <div class="field"><label>Unit</label>
+        <select id="mUnit"><option>kg</option><option>ton</option><option>pcs</option><option>m</option><option>m²</option><option>litre</option><option>sheet</option><option>roll</option></select>
+      </div>
+    </div>
+    <div class="frow">
+      <div class="field"><label>Reorder level</label><input id="mReorder" type="number" min="0" step="any" placeholder="50"></div>
+      <div class="field"><label>Unit cost (SAR)</label><input id="mCost" type="number" min="0" step="any" placeholder="0"></div>
+    </div>
+    <div class="field"><label>Supplier</label><input id="mSupplier" placeholder="optional"></div>
+    <div class="modal-foot">
+      <button class="btn danger" id="mDelete" style="display:none" onclick="deleteItem()">Delete</button>
+      <div class="right"><button class="btn" onclick="closeModals()">Cancel</button><button class="btn primary" onclick="saveItem()">Save item</button></div>
+    </div>
+  </div>
+</div>
+
+<!-- stock adjust -->
+<div class="overlay" id="adjOverlay">
+  <div class="modal">
+    <h2 id="adjTitle">Adjust stock</h2>
+    <div class="field"><label>Movement</label>
+      <select id="adjType"><option value="in">Stock in (+)</option><option value="out">Stock out (−)</option><option value="set">Set exact count</option></select>
+    </div>
+    <div class="field"><label>Quantity</label><input id="adjQty" type="number" min="0" step="any" placeholder="0"></div>
+    <div class="field"><label>Note</label><input id="adjNote" placeholder="e.g. Used on APM-Q-2026-004"></div>
+    <div class="modal-foot"><div class="right"><button class="btn" onclick="closeModals()">Cancel</button><button class="btn primary" onclick="applyAdjust()">Apply</button></div></div>
+  </div>
+</div>
+
+<div id="toasts"></div>
+<script>
+const SB_URL='https://spfztpokbpomqtiqgggz.supabase.co';
+const SB_KEY='sb_publishable_xPXU0xL_YaiWA6k9PWc0Xg_4QYeypNi';
+const sb=supabase.createClient(SB_URL,SB_KEY);
+let items=[], filter='all', adjTarget=null;
+const CATS={steel:{label:'Steel',color:'#5B7A9D'},paint:{label:'Paint',color:'#9B7EDE'},consumable:{label:'Consumable',color:'#E8C547'},hardware:{label:'Hardware',color:'#4D9DE0'},other:{label:'Other',color:'#8C97A6'}};
+const $=id=>document.getElementById(id);
+const esc=s=>(s??'').toString().replaceAll('&','&amp;').replaceAll('<','&lt;').replaceAll('>','&gt;').replaceAll('"','&quot;').replaceAll("'",'&#39;');
+const fmtSAR0=n=>'SAR '+Number(n||0).toLocaleString('en-US',{maximumFractionDigits:0});
+const fmtQty=n=>Number(n||0).toLocaleString('en-US',{maximumFractionDigits:2});
+function toast(m,k){const t=document.createElement('div');t.className='toast '+(k||'ok');t.textContent=m;$('toasts').appendChild(t);setTimeout(()=>t.remove(),3800);}
+const isLow=i=>Number(i.qty)<=Number(i.reorder_level||0)&&Number(i.reorder_level||0)>0;
+const isOut=i=>Number(i.qty)<=0;
+
+async function loadAll(){
+  const {data,error}=await sb.from('inventory').select('*').order('name');
+  if(error){$('listBody').innerHTML='<div class="panel"><div class="empty-state">Could not reach the database.<br>Run <b>inventory_setup.sql</b> in Supabase first.</div></div>';toast('Load failed: '+error.message,'err');return;}
+  items=data; renderAll();
+}
+function renderAll(){renderStats();renderAlerts();renderList();}
+function renderStats(){
+  $('stCount').textContent=items.length;
+  $('stValue').textContent=fmtSAR0(items.reduce((s,i)=>s+Number(i.qty||0)*Number(i.unit_cost||0),0));
+  $('stLow').textContent=items.filter(isLow).length;
+  $('stOut').textContent=items.filter(isOut).length;
+}
+function renderAlerts(){
+  const low=items.filter(isLow);
+  $('alertZone').innerHTML=low.length?`<div class="alertbar">⚠ <span><b>${low.length}</b> item${low.length>1?'s are':' is'} at or below reorder level: ${low.slice(0,4).map(i=>esc(i.name)).join(', ')}${low.length>4?'…':''}</span></div>`:'';
+}
+function setFilter(f){filter=f;document.querySelectorAll('.fp').forEach(p=>p.classList.toggle('active',p.dataset.f===f));renderList();}
+function renderList(){
+  let list=items.slice();
+  if(filter==='low') list=list.filter(isLow);
+  else if(filter!=='all') list=list.filter(i=>i.category===filter);
+  const term=$('search').value.trim().toLowerCase();
+  if(term) list=list.filter(i=>[i.name,i.sku,i.supplier].some(v=>(v||'').toLowerCase().includes(term)));
+  if(!list.length){$('listBody').innerHTML='<div class="panel"><div class="empty-state"><b>Nothing here.</b><br>Add raw materials, paint, consumables and hardware to track stock.</div></div>';return;}
+  const rows=list.map(i=>{
+    const c=CATS[i.category]||CATS.other, low=isLow(i), out=isOut(i);
+    const color=out?'#E5534B':low?'#E8C547':'#3FB970';
+    return `<tr class="${low?'low':''}">
+      <td><b>${esc(i.name)}</b><div class="muted" style="font-size:12px">${esc(i.sku||'')}</div></td>
+      <td><span class="pill" style="color:${c.color};border-color:${c.color}55">${c.label}</span></td>
+      <td><span class="stockbadge" style="color:${color}">${fmtQty(i.qty)}</span> <span class="muted">${esc(i.unit)}</span></td>
+      <td class="mono muted">${i.reorder_level?fmtQty(i.reorder_level)+' '+esc(i.unit):'—'}</td>
+      <td class="mono">${fmtSAR0(Number(i.qty||0)*Number(i.unit_cost||0))}</td>
+      <td class="muted">${esc(i.supplier||'—')}</td>
+      <td><div class="rowbtns">
+        <button class="qbtn minus" title="Stock out" onclick="quickAdjust('${i.id}','out')">−</button>
+        <button class="qbtn plus" title="Stock in" onclick="quickAdjust('${i.id}','in')">+</button>
+        <button class="iconbtn" title="Edit" onclick="openItemModal('${i.id}')">✎</button>
+      </div></td>
+    </tr>`;
+  }).join('');
+  $('listBody').innerHTML=`<div class="panel"><table>
+    <thead><tr><th>Material</th><th>Category</th><th>In stock</th><th>Reorder at</th><th>Value</th><th>Supplier</th><th></th></tr></thead>
+    <tbody>${rows}</tbody></table></div>`;
+}
+function nextSku(cat){
+  const p=(cat||'OTH').slice(0,3).toUpperCase()+'-';
+  const nums=items.map(i=>i.sku).filter(s=>s&&s.startsWith(p)).map(s=>parseInt(s.slice(p.length),10)).filter(n=>!isNaN(n));
+  return p+String((nums.length?Math.max(...nums):0)+1).padStart(3,'0');
+}
+function openItemModal(id){
+  const it=id?items.find(x=>x.id===id):null;
+  $('mId').value=it?.id||''; $('itemTitle').textContent=it?'Edit item':'New item';
+  $('mName').value=it?.name||''; $('mSku').value=it?.sku||''; $('mCat').value=it?.category||'steel';
+  $('mQty').value=it?Number(it.qty):''; $('mUnit').value=it?.unit||'kg';
+  $('mReorder').value=it?.reorder_level??''; $('mCost').value=it?.unit_cost??''; $('mSupplier').value=it?.supplier||'';
+  $('mDelete').style.display=it?'':'none';
+  $('itemOverlay').classList.add('open'); $('mName').focus();
+}
+async function saveItem(){
+  const name=$('mName').value.trim(); if(!name) return toast('Material name is required','err');
+  const cat=$('mCat').value;
+  const rec={name,sku:$('mSku').value.trim()||nextSku(cat),category:cat,
+    qty:Number($('mQty').value||0),unit:$('mUnit').value,
+    reorder_level:Number($('mReorder').value||0),unit_cost:Number($('mCost').value||0),
+    supplier:$('mSupplier').value.trim()||null};
+  const id=$('mId').value;
+  const q=id?sb.from('inventory').update(rec).eq('id',id):sb.from('inventory').insert(rec);
+  const {error}=await q;
+  if(error) return toast('Save failed: '+error.message,'err');
+  closeModals(); toast(id?'Item updated':'Item added'); loadAll();
+}
+async function deleteItem(){
+  const id=$('mId').value; if(!id||!confirm('Delete this item?'))return;
+  const {error}=await sb.from('inventory').delete().eq('id',id);
+  if(error) return toast('Delete failed: '+error.message,'err');
+  closeModals(); toast('Item deleted'); loadAll();
+}
+/* adjustments */
+function quickAdjust(id,type){
+  adjTarget=items.find(i=>i.id===id); if(!adjTarget)return;
+  $('adjTitle').textContent=(type==='in'?'Stock in — ':'Stock out — ')+adjTarget.name;
+  $('adjType').value=type; $('adjQty').value=''; $('adjNote').value='';
+  $('adjOverlay').classList.add('open'); $('adjQty').focus();
+}
+async function applyAdjust(){
+  const type=$('adjType').value, q=Number($('adjQty').value||0);
+  if(q<=0&&type!=='set') return toast('Enter a quantity','err');
+  let newQty=Number(adjTarget.qty||0);
+  if(type==='in') newQty+=q; else if(type==='out') newQty=Math.max(0,newQty-q); else newQty=q;
+  const {error}=await sb.from('inventory').update({qty:newQty}).eq('id',adjTarget.id);
+  if(error) return toast('Failed: '+error.message,'err');
+  adjTarget.qty=newQty; closeModals(); renderAll();
+  toast(isOut(adjTarget)?'Now out of stock':isLow(adjTarget)?'Updated — below reorder level ⚠':'Stock updated', isLow(adjTarget)?'err':'ok');
+}
+function closeModals(){document.querySelectorAll('.overlay').forEach(o=>o.classList.remove('open'));}
+document.querySelectorAll('.overlay').forEach(o=>o.addEventListener('click',e=>{if(e.target===o)closeModals();}));
+document.addEventListener('keydown',e=>{if(e.key==='Escape')closeModals();});
+loadAll();
+</script>
+</body>
+</html>
