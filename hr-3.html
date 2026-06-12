@@ -1,0 +1,359 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>HR — APM Metal Works</title>
+<script>
+(function(){
+  // 1. Main session guard
+  var K='apm_auth',T=10*60*60*1000;
+  try{var s=JSON.parse(sessionStorage.getItem(K));if(!s||Date.now()-s.ts>T)throw 0;}
+  catch(e){window.location.href='login.html';return;}
+  // 2. Per-module password gate
+  var MK='apm_mod_hr',PASS='hr';
+  if(!sessionStorage.getItem(MK)){
+    document.addEventListener('DOMContentLoaded',function(){
+      // Hide entire app body
+      document.body.style.display='none';
+      // Inject gate overlay
+      var th=localStorage.getItem('apm_theme')||'light';
+      var gate=document.createElement('div');
+      gate.id='mod-gate';
+      gate.innerHTML='<style>'
+        +'#mod-gate{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;'
+        +'background:var(--bg,#fff);z-index:9999;font-family:inherit}'
+        +'#mod-gate .gc{width:100%;max-width:360px;padding:24px;border:1px solid var(--border,#d8d8d8);'
+        +'border-radius:10px;box-shadow:0 4px 20px rgba(0,0,0,.08)}'
+        +'#mod-gate h2{font-size:17px;font-weight:700;margin-bottom:4px}'
+        +'#mod-gate p{font-size:13px;color:var(--text3,#888);margin-bottom:20px}'
+        +'#mod-gate label{display:block;font-size:11px;font-weight:600;letter-spacing:.08em;'
+        +'text-transform:uppercase;color:var(--text3,#888);margin-bottom:7px}'
+        +'#mod-gate input{width:100%;padding:11px 13px;border:1px solid var(--border,#d8d8d8);'
+        +'border-radius:6px;background:var(--bg1,#f5f5f5);color:var(--text,#0a0a0a);'
+        +'font-size:14px;font-family:inherit;box-sizing:border-box}'
+        +'#mod-gate input:focus{outline:none;border-color:#C8A96E}'
+        +'#mod-gate input.err{border-color:#C0392B}'
+        +'#mod-gate .errmsg{display:none;color:#C0392B;font-size:12.5px;margin-top:8px}'
+        +'#mod-gate .errmsg.show{display:block}'
+        +'#mod-gate button{width:100%;margin-top:14px;padding:11px;background:#C8A96E;'
+        +'border:none;border-radius:6px;color:#0a0a0a;font-size:14px;font-weight:700;cursor:pointer}'
+        +'#mod-gate button:hover{background:#A8874E}'
+        +'</style>'
+        +'<div class="gc">'
+        +'<h2>HR</h2>'
+        +'<p>Enter the module password to continue.</p>'
+        +'<label>Password</label>'
+        +'<input id="mgpw" type="password" placeholder="Password" />'
+        +'<div class="errmsg" id="mgerr">Incorrect password.</div>'
+        +'<button onclick="mgCheck()">Open</button>'
+        +'</div>';
+      document.body.parentNode.insertBefore(gate, document.body);
+      document.getElementById('mgpw').addEventListener('keydown',function(e){
+        if(e.key==='Enter') mgCheck();
+        document.getElementById('mgerr').classList.remove('show');
+        document.getElementById('mgpw').classList.remove('err');
+      });
+      setTimeout(function(){document.getElementById('mgpw').focus();},80);
+    });
+  }
+  window.mgCheck=function(){
+    var pw=document.getElementById('mgpw').value;
+    if(pw===PASS){
+      sessionStorage.setItem(MK,'1');
+      document.getElementById('mod-gate').remove();
+      document.body.style.display='';
+    }else{
+      document.getElementById('mgerr').classList.add('show');
+      document.getElementById('mgpw').classList.add('err');
+      document.getElementById('mgpw').value='';
+      document.getElementById('mgpw').focus();
+    }
+  };
+})();
+(function(){var t=localStorage.getItem('apm_theme')||'light';document.documentElement.setAttribute('data-theme',t);})();
+</script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+:root{--gold:#C8A96E;--gold-dk:#A8874E;--black:#0A0A0A;--bg:#FFFFFF;--bg1:#F5F5F5;--bg2:#EBEBEB;--border:#D8D8D8;--text:#0A0A0A;--text2:#444444;--text3:#888888;--shadow:rgba(0,0,0,.07)}
+[data-theme="dark"]{--bg:#0A0A0A;--bg1:#141414;--bg2:#1E1E1E;--border:#2A2A2A;--text:#F0F0F0;--text2:#AAAAAA;--text3:#666666;--shadow:rgba(0,0,0,.35)}
+*,*::before,*::after{margin:0;padding:0;box-sizing:border-box}
+body{background:var(--bg);color:var(--text);font-family:'Inter',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;min-height:100vh;-webkit-font-smoothing:antialiased;transition:background .2s,color .2s}
+button{font-family:inherit;cursor:pointer}
+.topbar{display:flex;align-items:center;justify-content:space-between;padding:0 28px;height:56px;border-bottom:1px solid var(--border);background:var(--bg);position:sticky;top:0;z-index:40}
+.topbar-left{display:flex;align-items:center;gap:16px}
+.brand-link{display:flex;align-items:center;gap:10px;text-decoration:none;color:var(--text)}
+.brand-mark{width:30px;height:30px;border-radius:6px;background:var(--gold);display:grid;place-items:center;font-size:13px;font-weight:800;color:var(--black);flex:none}
+.brand-name{font-size:14px;font-weight:700;letter-spacing:-.01em}
+.page-label{font-size:13.5px;color:var(--text3);padding-left:16px;border-left:1px solid var(--border)}
+.topbar-right{display:flex;align-items:center;gap:10px}
+.theme-btn{width:32px;height:32px;border-radius:6px;background:transparent;border:1px solid var(--border);color:var(--text2);display:grid;place-items:center;transition:border-color .15s}
+.theme-btn:hover{border-color:var(--gold)}
+.btn{display:inline-flex;align-items:center;gap:6px;padding:8px 16px;border-radius:6px;font-size:13.5px;font-weight:600;border:1px solid var(--border);background:var(--bg1);color:var(--text);cursor:pointer;transition:border-color .15s,background .15s}
+.btn:hover{border-color:var(--gold)}.btn-gold{background:var(--gold);border-color:var(--gold);color:var(--black)}.btn-gold:hover{background:var(--gold-dk);border-color:var(--gold-dk)}
+.btn-danger{color:#C0392B;border-color:#C0392B33}.btn-danger:hover{border-color:#C0392B}
+.btn-sm{padding:6px 12px;font-size:12.5px}
+.wrap{max-width:1200px;margin:0 auto;padding:28px}
+.stats-row{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));background:var(--border);border:1px solid var(--border);border-radius:8px;overflow:hidden;margin-bottom:24px}
+.stat-cell{background:var(--bg);padding:18px 22px;border-right:1px solid var(--border)}.stat-cell:last-child{border-right:none}
+.stat-lbl{font-size:11px;font-weight:600;letter-spacing:.1em;text-transform:uppercase;color:var(--text3);margin-bottom:6px}
+.stat-val{font-size:22px;font-weight:700;font-variant-numeric:tabular-nums}.stat-val.gold{color:var(--gold-dk)}
+.tabs{display:flex;gap:2px;background:var(--bg1);border:1px solid var(--border);border-radius:6px;padding:3px;width:fit-content;margin-bottom:18px}
+.tab{background:transparent;border:none;color:var(--text3);padding:7px 20px;border-radius:4px;font-size:13.5px;font-weight:500;cursor:pointer}
+.tab.active{background:var(--bg);color:var(--text);font-weight:600;box-shadow:0 1px 3px var(--shadow)}
+.toolbar{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:18px}
+.search-input{padding:8px 12px;border:1px solid var(--border);border-radius:6px;background:var(--bg1);color:var(--text);font-size:13.5px;min-width:220px;flex:1;max-width:320px}
+.search-input:focus{outline:none;border-color:var(--gold)}
+.tbl-wrap{border:1px solid var(--border);border-radius:8px;overflow:hidden}
+table{width:100%;border-collapse:collapse;font-size:13.5px}
+thead th{background:var(--bg1);padding:11px 16px;text-align:left;font-size:11px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--text3);border-bottom:1px solid var(--border);white-space:nowrap}
+tbody td{padding:13px 16px;border-bottom:1px solid var(--border);vertical-align:middle}
+tbody tr:last-child td{border-bottom:none}
+tbody tr.rc{cursor:pointer}tbody tr.rc:hover{background:var(--bg1)}
+.mono{font-variant-numeric:tabular-nums;font-size:13px}.dim{color:var(--text3);font-size:12.5px}
+.badge{display:inline-block;padding:3px 9px;border-radius:4px;font-size:11.5px;font-weight:600;border:1px solid}
+.av{width:32px;height:32px;border-radius:6px;background:var(--bg2);border:1px solid var(--border);display:inline-grid;place-items:center;font-size:12px;font-weight:700;color:var(--gold-dk);margin-right:10px;vertical-align:middle;flex:none}
+.empty{padding:52px 20px;text-align:center;color:var(--text3);font-size:14px}.empty strong{display:block;color:var(--text);margin-bottom:4px}
+.overlay{position:fixed;inset:0;background:rgba(0,0,0,.45);display:none;align-items:flex-start;justify-content:center;z-index:60;padding:5vh 16px;overflow-y:auto}
+.overlay.open{display:flex}
+.modal{background:var(--bg);border:1px solid var(--border);border-radius:10px;width:100%;max-width:520px;padding:28px;box-shadow:0 8px 32px var(--shadow)}
+.modal h2{font-size:17px;font-weight:700;margin-bottom:20px}
+.field{margin-bottom:14px}.field label{display:block;font-size:11.5px;font-weight:600;letter-spacing:.07em;text-transform:uppercase;color:var(--text3);margin-bottom:6px}
+.field input,.field select{width:100%;background:var(--bg1);border:1px solid var(--border);border-radius:6px;color:var(--text);padding:9px 11px;font-size:14px}
+.field input:focus,.field select:focus{outline:none;border-color:var(--gold)}
+.f2{display:grid;grid-template-columns:1fr 1fr;gap:12px}@media(max-width:520px){.f2{grid-template-columns:1fr}}
+.modal-foot{display:flex;gap:10px;justify-content:flex-end;margin-top:20px;border-top:1px solid var(--border);padding-top:20px}
+.mfl{margin-right:auto}
+#toasts{position:fixed;bottom:20px;right:20px;display:flex;flex-direction:column;gap:8px;z-index:90}
+.toast{background:var(--bg);border:1px solid var(--border);border-left:3px solid var(--gold);border-radius:7px;padding:11px 16px;font-size:13.5px;min-width:220px;box-shadow:0 4px 16px var(--shadow);animation:tin .2s ease}
+.toast.err{border-left-color:#C0392B}
+@keyframes tin{from{transform:translateX(12px);opacity:0}}
+.loading{padding:60px;text-align:center;color:var(--text3)}
+</style>
+</head>
+<body>
+<header class="topbar">
+  <div class="topbar-left">
+    <a class="brand-link" href="dashboard.html"><div class="brand-mark">AP</div><span class="brand-name">APM Metal Works</span></a>
+    <span class="page-label">HR</span>
+  </div>
+  <div class="topbar-right">
+    <button class="theme-btn" onclick="toggleTheme()"><svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="8" cy="8" r="3"/><path d="M8 1v1.5M8 13.5V15M1 8h1.5M13.5 8H15M3.05 3.05l1.06 1.06M11.89 11.89l1.06 1.06M3.05 12.95l1.06-1.06M11.89 4.11l1.06-1.06"/></svg></button>
+    <button class="btn btn-sm" onclick="openLeaveModal()">+ Log leave</button>
+    <button class="btn btn-gold btn-sm" onclick="openEmpModal()">+ Employee</button>
+  </div>
+</header>
+<div class="wrap">
+  <div class="stats-row">
+    <div class="stat-cell"><div class="stat-lbl">Employees</div><div class="stat-val" id="stE">—</div></div>
+    <div class="stat-cell"><div class="stat-lbl">On leave today</div><div class="stat-val" id="stT">—</div></div>
+    <div class="stat-cell"><div class="stat-lbl">Monthly payroll</div><div class="stat-val gold" id="stP">—</div></div>
+    <div class="stat-cell"><div class="stat-lbl">Pending leave</div><div class="stat-val" id="stPL">—</div></div>
+  </div>
+  <div class="tabs">
+    <button class="tab active" data-v="employees" onclick="switchView('employees')">Employees</button>
+    <button class="tab" data-v="leave" onclick="switchView('leave')">Leave</button>
+  </div>
+  <div class="toolbar"><input class="search-input" id="search" placeholder="Search…" oninput="renderAll()"></div>
+  <div id="vEmp"><div class="loading">Loading…</div></div>
+  <div id="vLeave" style="display:none"></div>
+</div>
+
+<!-- Employee modal -->
+<div class="overlay" id="empOverlay">
+  <div class="modal">
+    <h2 id="eTitle">New employee</h2>
+    <input type="hidden" id="eId">
+    <div class="f2">
+      <div class="field"><label>Full name</label><input id="eName" placeholder="Mohammed Hassan"></div>
+      <div class="field"><label>Employee ID</label><input id="eCode" placeholder="auto if blank"></div>
+    </div>
+    <div class="f2">
+      <div class="field"><label>Role</label><input id="eRole" placeholder="Welder"></div>
+      <div class="field"><label>Department</label><select id="eDept"><option>Fabrication</option><option>Installation</option><option>Welding</option><option>Admin</option><option>Procurement</option><option>Management</option></select></div>
+    </div>
+    <div class="f2">
+      <div class="field"><label>Iqama / ID</label><input id="eIqama" placeholder="optional"></div>
+      <div class="field"><label>Phone</label><input id="ePhone" placeholder="9665XXXXXXXX"></div>
+    </div>
+    <div class="f2">
+      <div class="field"><label>Join date</label><input id="eJoin" type="date"></div>
+      <div class="field"><label>Monthly salary (SAR)</label><input id="eSal" type="number" min="0" step="any" placeholder="0"></div>
+    </div>
+    <div class="f2">
+      <div class="field"><label>Annual leave (days)</label><input id="eLv" type="number" min="0" step="1" placeholder="21"></div>
+      <div class="field"><label>Status</label><select id="eSt"><option value="active">Active</option><option value="inactive">Inactive</option></select></div>
+    </div>
+    <div class="modal-foot">
+      <button class="btn btn-danger btn-sm mfl" id="eDel" style="display:none" onclick="deleteEmp()">Delete</button>
+      <button class="btn btn-sm" onclick="closeModals()">Cancel</button>
+      <button class="btn btn-gold btn-sm" onclick="saveEmp()">Save</button>
+    </div>
+  </div>
+</div>
+
+<!-- Leave modal -->
+<div class="overlay" id="leaveOverlay">
+  <div class="modal">
+    <h2 id="lvTitle">Log leave</h2>
+    <input type="hidden" id="lvId">
+    <div class="field"><label>Employee</label><select id="lvEmp"></select></div>
+    <div class="f2">
+      <div class="field"><label>Type</label><select id="lvType"><option>Annual</option><option>Sick</option><option>Emergency</option><option>Unpaid</option><option>Hajj</option></select></div>
+      <div class="field"><label>Status</label><select id="lvSt"><option value="pending">Pending</option><option value="approved">Approved</option><option value="rejected">Rejected</option></select></div>
+    </div>
+    <div class="f2">
+      <div class="field"><label>From</label><input id="lvFrom" type="date" onchange="calcDays()"></div>
+      <div class="field"><label>To</label><input id="lvTo" type="date" onchange="calcDays()"></div>
+    </div>
+    <div class="field"><label>Duration</label><input id="lvDays" disabled></div>
+    <div class="field"><label>Note</label><input id="lvNote" placeholder="optional"></div>
+    <div class="modal-foot">
+      <button class="btn btn-danger btn-sm mfl" id="lvDel" style="display:none" onclick="deleteLeave()">Delete</button>
+      <button class="btn btn-sm" onclick="closeModals()">Cancel</button>
+      <button class="btn btn-gold btn-sm" onclick="saveLeave()">Save</button>
+    </div>
+  </div>
+</div>
+
+<div id="toasts"></div>
+<script>
+const SB_URL='https://spfztpokbpomqtiqgggz.supabase.co';
+const SB_KEY='sb_publishable_xPXU0xL_YaiWA6k9PWc0Xg_4QYeypNi';
+const sb=supabase.createClient(SB_URL,SB_KEY);
+const DEPT_COLOR={Fabrication:'#888',Installation:'#A8874E',Welding:'#C8A96E',Admin:'#444',Procurement:'#666',Management:'#0A0A0A'};
+const LV_ST={pending:{label:'Pending',color:'#C8A96E'},approved:{label:'Approved',color:'#2D7D46'},rejected:{label:'Rejected',color:'#C0392B'}};
+let emps=[],leaves=[],view='employees';
+const $=id=>document.getElementById(id);
+const esc=s=>(s??'').toString().replaceAll('&','&amp;').replaceAll('<','&lt;').replaceAll('>','&gt;').replaceAll('"','&quot;').replaceAll("'",'&#39;');
+const fmtSAR0=n=>'SAR '+Number(n||0).toLocaleString('en-US',{maximumFractionDigits:0});
+const fmtDate=d=>d?new Date(d).toLocaleDateString('en-GB',{day:'numeric',month:'short',year:'numeric'}):'—';
+const today=()=>new Date().toISOString().slice(0,10);
+const initials=n=>(n||'?').split(/\s+/).slice(0,2).map(w=>w[0]||'').join('').toUpperCase();
+const daysBetween=(a,b)=>{if(!a||!b)return 0;const d=(new Date(b)-new Date(a))/86400000;return d<0?0:Math.round(d)+1;};
+const empById=id=>emps.find(e=>e.id===id);
+
+function toggleTheme(){const n=document.documentElement.getAttribute('data-theme')==='dark'?'light':'dark';document.documentElement.setAttribute('data-theme',n);localStorage.setItem('apm_theme',n);}
+function toast(m,e){const t=document.createElement('div');t.className='toast'+(e?' err':'');t.textContent=m;$('toasts').appendChild(t);setTimeout(()=>t.remove(),3800);}
+
+async function loadAll(){
+  const[eR,lR]=await Promise.all([
+    sb.from('employees').select('*').order('name'),
+    sb.from('leave_requests').select('*').order('from_date',{ascending:false}),
+  ]);
+  if(eR.error){$('vEmp').innerHTML='<div class="tbl-wrap"><div class="empty"><strong>Could not load</strong>Run erp_setup_all.sql and fix_permissions.sql in Supabase.</div></div>';toast(eR.error.message,1);return;}
+  emps=eR.data;leaves=lR.error?[]:lR.data;renderAll();
+}
+function renderAll(){renderStats();view==='employees'?renderEmps():renderLeave();}
+function renderStats(){
+  const t=today();
+  const onLeave=leaves.filter(l=>l.status==='approved'&&l.from_date<=t&&l.to_date>=t);
+  $('stE').textContent=emps.filter(e=>e.status==='active').length;
+  $('stT').textContent=onLeave.length;
+  $('stP').textContent=fmtSAR0(emps.filter(e=>e.status==='active').reduce((s,e)=>s+Number(e.salary||0),0));
+  $('stPL').textContent=leaves.filter(l=>l.status==='pending').length;
+}
+function switchView(v){view=v;document.querySelectorAll('.tab').forEach(t=>t.classList.toggle('active',t.dataset.v===v));$('vEmp').style.display=v==='employees'?'':'none';$('vLeave').style.display=v==='leave'?'':'none';renderAll();}
+
+function renderEmps(){
+  const term=$('search').value.trim().toLowerCase();
+  let list=emps.slice();
+  if(term)list=list.filter(e=>[e.name,e.role,e.department,e.emp_code].some(v=>(v||'').toLowerCase().includes(term)));
+  if(!list.length){$('vEmp').innerHTML='<div class="tbl-wrap"><div class="empty"><strong>No employees</strong>Add your crew — welders, fabricators, installers and admin staff.</div></div>';return;}
+  const t=today();
+  const rows=list.map(e=>{
+    const onL=leaves.some(l=>l.employee_id===e.id&&l.status==='approved'&&l.from_date<=t&&l.to_date>=t);
+    const dc=DEPT_COLOR[e.department]||'#888';
+    return`<tr class="rc" onclick="openEmpModal('${e.id}')">
+      <td><span class="av">${esc(initials(e.name))}</span><strong>${esc(e.name)}</strong><div class="dim">${esc(e.emp_code||'')}</div></td>
+      <td>${esc(e.role||'—')}</td>
+      <td><span class="badge" style="color:${dc};border-color:${dc}44">${esc(e.department||'—')}</span></td>
+      <td class="mono">${fmtSAR0(e.salary)}</td>
+      <td>${e.status==='active'?(onL?'<span class="badge" style="color:#A8874E;border-color:#A8874E44">On leave</span>':'<span class="badge" style="color:#2D7D46;border-color:#2D7D4644">Active</span>'):'<span class="badge" style="color:#888;border-color:#88844">Inactive</span>'}</td>
+    </tr>`;
+  }).join('');
+  $('vEmp').innerHTML=`<div class="tbl-wrap"><table><thead><tr><th>Employee</th><th>Role</th><th>Department</th><th>Salary</th><th>Status</th></tr></thead><tbody>${rows}</tbody></table></div>`;
+}
+function renderLeave(){
+  const term=$('search').value.trim().toLowerCase();
+  let list=leaves.slice();
+  if(term)list=list.filter(l=>{const e=empById(l.employee_id);return[e?.name,l.type,l.note].some(v=>(v||'').toLowerCase().includes(term));});
+  if(!list.length){$('vLeave').innerHTML='<div class="tbl-wrap"><div class="empty"><strong>No leave records</strong>Log annual, sick or emergency leave for any employee.</div></div>';return;}
+  const rows=list.map(l=>{
+    const e=empById(l.employee_id),s=LV_ST[l.status]||LV_ST.pending;
+    return`<tr class="rc" onclick="openLeaveModal('${l.id}')">
+      <td><strong>${esc(e?.name||'—')}</strong></td>
+      <td>${esc(l.type)}</td>
+      <td class="mono dim">${fmtDate(l.from_date)} to ${fmtDate(l.to_date)}</td>
+      <td class="mono dim">${daysBetween(l.from_date,l.to_date)} days</td>
+      <td><span class="badge" style="color:${s.color};border-color:${s.color}44">${s.label}</span></td>
+      <td><div style="display:flex;gap:4px;justify-content:flex-end">
+        ${l.status==='pending'?`<button class="btn btn-sm" style="padding:4px 9px;font-size:12px;color:#2D7D46;border-color:#2D7D4644" onclick="event.stopPropagation();setLvSt('${l.id}','approved')">Approve</button>
+        <button class="btn btn-sm" style="padding:4px 9px;font-size:12px;color:#C0392B;border-color:#C0392B44" onclick="event.stopPropagation();setLvSt('${l.id}','rejected')">Reject</button>`:''}
+      </div></td>
+    </tr>`;
+  }).join('');
+  $('vLeave').innerHTML=`<div class="tbl-wrap"><table><thead><tr><th>Employee</th><th>Type</th><th>Dates</th><th>Days</th><th>Status</th><th></th></tr></thead><tbody>${rows}</tbody></table></div>`;
+}
+
+function nextEmpCode(){const p='APM-E-';const nums=emps.map(e=>e.emp_code).filter(c=>c&&c.startsWith(p)).map(c=>parseInt(c.slice(p.length),10)).filter(n=>!isNaN(n));return p+String((nums.length?Math.max(...nums):0)+1).padStart(3,'0');}
+function openEmpModal(id){
+  const e=id?empById(id):null;
+  $('eId').value=e?.id||'';$('eTitle').textContent=e?'Edit employee':'New employee';
+  $('eName').value=e?.name||'';$('eCode').value=e?.emp_code||'';$('eRole').value=e?.role||'';
+  $('eDept').value=e?.department||'Fabrication';$('eIqama').value=e?.iqama||'';$('ePhone').value=e?.phone||'';
+  $('eJoin').value=e?.join_date||'';$('eSal').value=e?.salary??'';$('eLv').value=e?.annual_leave_days??21;
+  $('eSt').value=e?.status||'active';$('eDel').style.display=e?'':'none';
+  $('empOverlay').classList.add('open');$('eName').focus();
+}
+async function saveEmp(){
+  const name=$('eName').value.trim();if(!name)return toast('Name required',1);
+  const rec={name,emp_code:$('eCode').value.trim()||nextEmpCode(),role:$('eRole').value.trim()||null,department:$('eDept').value,iqama:$('eIqama').value.trim()||null,phone:$('ePhone').value.trim()||null,join_date:$('eJoin').value||null,salary:Number($('eSal').value||0),annual_leave_days:Number($('eLv').value||21),status:$('eSt').value};
+  const id=$('eId').value;
+  const{error}=await(id?sb.from('employees').update(rec).eq('id',id):sb.from('employees').insert(rec));
+  if(error)return toast(error.message,1);
+  closeModals();toast(id?'Employee updated':'Employee added');loadAll();
+}
+async function deleteEmp(){
+  const id=$('eId').value;if(!id||!confirm('Delete this employee?'))return;
+  const{error}=await sb.from('employees').delete().eq('id',id);
+  if(error)return toast(error.message,1);
+  closeModals();toast('Deleted');loadAll();
+}
+function calcDays(){const d=daysBetween($('lvFrom').value,$('lvTo').value);$('lvDays').value=d?d+' day'+(d>1?'s':''):'—';}
+function openLeaveModal(id){
+  const l=id?leaves.find(x=>x.id===id):null;
+  $('lvId').value=l?.id||'';$('lvTitle').textContent=l?'Edit leave':'Log leave';
+  $('lvEmp').innerHTML=emps.map(e=>`<option value="${e.id}">${esc(e.name)}</option>`).join('');
+  $('lvEmp').value=l?.employee_id||(emps[0]?.id||'');
+  $('lvType').value=l?.type||'Annual';$('lvSt').value=l?.status||'pending';
+  $('lvFrom').value=l?.from_date||today();$('lvTo').value=l?.to_date||today();
+  $('lvNote').value=l?.note||'';$('lvDel').style.display=l?'':'none';
+  calcDays();$('leaveOverlay').classList.add('open');
+}
+async function saveLeave(){
+  const emp=$('lvEmp').value;if(!emp)return toast('Pick an employee',1);
+  if(!$('lvFrom').value||!$('lvTo').value)return toast('From and to dates required',1);
+  const rec={employee_id:emp,type:$('lvType').value,status:$('lvSt').value,from_date:$('lvFrom').value,to_date:$('lvTo').value,note:$('lvNote').value.trim()||null};
+  const id=$('lvId').value;
+  const{error}=await(id?sb.from('leave_requests').update(rec).eq('id',id):sb.from('leave_requests').insert(rec));
+  if(error)return toast(error.message,1);
+  closeModals();toast(id?'Leave updated':'Leave logged');loadAll();
+}
+async function setLvSt(id,status){
+  const{error}=await sb.from('leave_requests').update({status}).eq('id',id);
+  if(error)return toast(error.message,1);
+  toast(status==='approved'?'Approved':'Rejected');loadAll();
+}
+async function deleteLeave(){
+  const id=$('lvId').value;if(!id||!confirm('Delete this leave record?'))return;
+  const{error}=await sb.from('leave_requests').delete().eq('id',id);
+  if(error)return toast(error.message,1);
+  closeModals();toast('Deleted');loadAll();
+}
+function closeModals(){document.querySelectorAll('.overlay').forEach(o=>o.classList.remove('open'));}
+document.querySelectorAll('.overlay').forEach(o=>o.addEventListener('click',e=>{if(e.target===o)closeModals();}));
+document.addEventListener('keydown',e=>{if(e.key==='Escape')closeModals();});
+loadAll();
+</script>
+</body>
+</html>
