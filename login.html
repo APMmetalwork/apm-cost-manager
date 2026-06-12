@@ -1,0 +1,239 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>APM Metal Works — Sign in</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Saira:ital,wght@0,700;0,800;0,900;1,800&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg0:#080A0D; --bg1:#0E1217; --bg2:#161C24; --bg3:#1D2530;
+  --line:#1F2830; --linehi:#2D3A48;
+  --text:#EDF0F4; --sub:#B2BAC6; --muted:#6B7887;
+  --gold:#C9A84C; --gold-lt:#E2C47A; --gold-dk:#8A6A28;
+  --gold-glow:rgba(201,168,76,.18); --gold-soft:rgba(201,168,76,.09);
+  --red:#E5534B;
+}
+*{margin:0;padding:0;box-sizing:border-box}
+html,body{height:100%}
+body{
+  background:var(--bg0); color:var(--text);
+  font-family:'Inter',system-ui,sans-serif;
+  display:grid; place-items:center; min-height:100vh;
+  -webkit-font-smoothing:antialiased;
+  background-image:
+    radial-gradient(ellipse 900px 600px at 70% 20%, rgba(201,168,76,.06) 0%, transparent 60%),
+    radial-gradient(ellipse 700px 500px at 20% 80%, rgba(45,58,72,.4) 0%, transparent 60%);
+}
+/* noise texture */
+body::before{
+  content:""; position:fixed; inset:0; pointer-events:none;
+  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='300' height='300'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='300' height='300' filter='url(%23n)' opacity='0.035'/%3E%3C/svg%3E");
+  opacity:.5; z-index:0;
+}
+
+.shell{
+  position:relative; z-index:1;
+  width:100%; max-width:420px; padding:16px;
+}
+
+.logo{
+  display:flex; align-items:center; gap:12px; justify-content:center; margin-bottom:36px;
+}
+.logobadge{
+  width:44px; height:44px; border-radius:11px;
+  background:linear-gradient(145deg,#1C2230,#0E121A);
+  border:1px solid var(--gold-dk);
+  display:grid; place-items:center;
+  font-family:'Saira',sans-serif; font-weight:900; font-size:16px; color:var(--gold);
+  box-shadow:0 0 18px rgba(201,168,76,.18);
+}
+.logotext strong{
+  display:block; font-family:'Saira',sans-serif; font-weight:700; font-size:17px;
+}
+.logotext span{
+  display:block; color:var(--muted); font-size:11px; letter-spacing:.14em; text-transform:uppercase; margin-top:2px;
+}
+
+.card{
+  background:linear-gradient(160deg,var(--bg2),var(--bg1));
+  border:1px solid var(--linehi); border-radius:18px;
+  padding:36px 32px 32px;
+  box-shadow:0 24px 60px rgba(0,0,0,.45);
+}
+
+/* gold top line */
+.card::before{
+  content:""; display:block; height:1px;
+  background:linear-gradient(90deg,transparent,var(--gold),transparent);
+  margin:-36px -32px 36px; border-radius:18px 18px 0 0;
+}
+
+.card h1{
+  font-family:'Saira',sans-serif; font-weight:800; font-size:22px; margin-bottom:6px;
+}
+.card .sub{ color:var(--muted); font-size:13.5px; margin-bottom:28px; }
+
+.field{ margin-bottom:16px; }
+.field label{
+  display:block; color:var(--muted); font-size:11.5px; font-weight:600;
+  letter-spacing:.08em; text-transform:uppercase; margin-bottom:7px;
+}
+.field input{
+  width:100%; background:var(--bg0); border:1px solid var(--linehi);
+  border-radius:10px; color:var(--text); padding:12px 14px;
+  font-size:14.5px; font-family:inherit;
+  transition:border-color .15s, box-shadow .15s;
+}
+.field input:focus{
+  outline:none; border-color:var(--gold);
+  box-shadow:0 0 0 3px rgba(201,168,76,.12);
+}
+.field input.error{ border-color:var(--red); box-shadow:0 0 0 3px rgba(229,83,75,.12); }
+
+.err-msg{
+  display:none; align-items:center; gap:8px;
+  background:rgba(229,83,75,.09); border:1px solid rgba(229,83,75,.3);
+  border-radius:9px; padding:11px 14px;
+  color:#f08680; font-size:13.5px; margin-bottom:18px;
+}
+.err-msg.show{ display:flex; }
+
+.btn-submit{
+  width:100%; padding:13px;
+  background:linear-gradient(135deg,var(--gold-lt),var(--gold));
+  color:#13100A; font-weight:700; font-size:15px;
+  border:none; border-radius:10px; cursor:pointer;
+  box-shadow:0 4px 20px rgba(201,168,76,.25);
+  transition:opacity .15s, transform .15s;
+  margin-top:4px;
+}
+.btn-submit:hover{ opacity:.9; transform:translateY(-1px); }
+.btn-submit:active{ transform:none; }
+.btn-submit:disabled{ opacity:.5; cursor:not-allowed; transform:none; }
+
+/* shake on wrong creds */
+@keyframes shake{
+  0%,100%{transform:translateX(0)}
+  20%{transform:translateX(-7px)}
+  40%{transform:translateX(7px)}
+  60%{transform:translateX(-5px)}
+  80%{transform:translateX(5px)}
+}
+.card.shake{ animation:shake .4s ease; }
+
+.hint{ color:var(--muted); font-size:12px; text-align:center; margin-top:20px; }
+</style>
+</head>
+<body>
+<div class="shell">
+  <div class="logo">
+    <div class="logobadge">AP</div>
+    <div class="logotext">
+      <strong>APM Metal Works</strong>
+      <span>Enterprise Suite</span>
+    </div>
+  </div>
+
+  <div class="card" id="card">
+    <h1>Sign in</h1>
+    <p class="sub">Internal access only.</p>
+
+    <div class="err-msg" id="errMsg">
+      <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><circle cx="8" cy="8" r="7" stroke="#E5534B" stroke-width="1.5"/><path d="M8 5v3.5M8 11h.01" stroke="#E5534B" stroke-width="1.5" stroke-linecap="round"/></svg>
+      Incorrect username or password.
+    </div>
+
+    <form id="loginForm" onsubmit="attempt(event)">
+      <div class="field">
+        <label>Username</label>
+        <input id="uname" type="text" autocomplete="username" autocapitalize="none" placeholder="Enter username" required>
+      </div>
+      <div class="field">
+        <label>Password</label>
+        <input id="pw" type="password" autocomplete="current-password" placeholder="Enter password" required>
+      </div>
+      <button class="btn-submit" id="submitBtn">Sign in</button>
+    </form>
+
+    <p class="hint">APM internal system — authorised access only.</p>
+  </div>
+</div>
+
+<script>
+// ── Credentials ──────────────────────────────────────────────────────────
+// Change these here to update the password across the whole suite.
+const CREDENTIALS = [
+  { user: 'apm',   pass: 'metalworks2024' },
+  { user: 'admin', pass: 'metalworks2024' },
+];
+// ─────────────────────────────────────────────────────────────────────────
+
+const SESSION_KEY = 'apm_erp_auth';
+const SESSION_TTL = 8 * 60 * 60 * 1000; // 8 hours in ms
+
+// If already logged in, go straight to the suite
+if (isAuthed()) {
+  goHome();
+}
+
+function isAuthed() {
+  try {
+    const raw = sessionStorage.getItem(SESSION_KEY);
+    if (!raw) return false;
+    const { ts } = JSON.parse(raw);
+    if (Date.now() - ts > SESSION_TTL) { sessionStorage.removeItem(SESSION_KEY); return false; }
+    return true;
+  } catch { return false; }
+}
+
+function goHome() {
+  // redirect to the page the user was trying to reach, or index
+  const dest = new URLSearchParams(location.search).get('next') || 'index.html';
+  location.replace(dest);
+}
+
+function attempt(e) {
+  e.preventDefault();
+  const u = document.getElementById('uname').value.trim().toLowerCase();
+  const p = document.getElementById('pw').value;
+  const btn = document.getElementById('submitBtn');
+
+  btn.disabled = true;
+  btn.textContent = 'Signing in…';
+
+  // tiny delay so it doesn't feel instant-fake
+  setTimeout(() => {
+    const ok = CREDENTIALS.some(c => c.user === u && c.pass === p);
+    if (ok) {
+      sessionStorage.setItem(SESSION_KEY, JSON.stringify({ user: u, ts: Date.now() }));
+      goHome();
+    } else {
+      btn.disabled = false;
+      btn.textContent = 'Sign in';
+      document.getElementById('errMsg').classList.add('show');
+      document.getElementById('uname').classList.add('error');
+      document.getElementById('pw').classList.add('error');
+      document.getElementById('pw').value = '';
+      const card = document.getElementById('card');
+      card.classList.remove('shake');
+      void card.offsetWidth; // reflow to retrigger animation
+      card.classList.add('shake');
+      setTimeout(() => {
+        document.getElementById('uname').classList.remove('error');
+        document.getElementById('pw').classList.remove('error');
+      }, 1500);
+    }
+  }, 280);
+}
+
+// Clear error state when user starts retyping
+['uname','pw'].forEach(id => {
+  document.getElementById(id).addEventListener('input', () => {
+    document.getElementById('errMsg').classList.remove('show');
+  });
+});
+</script>
+</body>
+</html>
