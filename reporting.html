@@ -1,0 +1,349 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Reporting -- APM Metal Works</title>
+<script>
+(function(){
+  var K='apm_auth',T=10*60*60*1000;
+  try{var s=JSON.parse(sessionStorage.getItem(K));if(!s||Date.now()-s.ts>T)throw 0;}
+  catch(e){window.location.href='login.html';return;}
+  var MK='apm_mod_reporting';
+  if(!sessionStorage.getItem(MK)){
+    document.addEventListener('DOMContentLoaded',function(){
+      document.body.style.display='none';
+      var gate=document.createElement('div');gate.id='mod-gate';
+      gate.innerHTML='<style>'
+        +'#mod-gate{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;'
+        +'background:var(--bg,#fff);z-index:9999;font-family:inherit}'
+        +'#mod-gate .gc{width:100%;max-width:360px;padding:24px;border:1px solid var(--border,#d8d8d8);'
+        +'border-radius:10px;box-shadow:0 4px 20px rgba(0,0,0,.08)}'
+        +'#mod-gate h2{font-size:17px;font-weight:700;margin-bottom:4px}'
+        +'#mod-gate p{font-size:13px;color:var(--text3,#888);margin-bottom:20px}'
+        +'#mod-gate label{display:block;font-size:11px;font-weight:600;letter-spacing:.08em;'
+        +'text-transform:uppercase;color:var(--text3,#888);margin-bottom:7px}'
+        +'#mod-gate input{width:100%;padding:11px 13px;border:1px solid var(--border,#d8d8d8);'
+        +'border-radius:6px;background:var(--bg1,#f5f5f5);color:var(--text,#0a0a0a);'
+        +'font-size:14px;font-family:inherit;box-sizing:border-box}'
+        +'#mod-gate input:focus{outline:none;border-color:#C8A96E}'
+        +'#mod-gate input.err{border-color:#C0392B}'
+        +'#mod-gate .errmsg{display:none;color:#C0392B;font-size:12.5px;margin-top:8px}'
+        +'#mod-gate .errmsg.show{display:block}'
+        +'#mod-gate button{width:100%;margin-top:14px;padding:11px;background:#C8A96E;'
+        +'border:none;border-radius:6px;color:#0a0a0a;font-size:14px;font-weight:700;cursor:pointer}'
+        +'#mod-gate button:hover{background:#A8874E}'
+        +'#mod-gate button:disabled{opacity:.6;cursor:not-allowed}'
+        +'</style>'
+        +'<div class="gc"><h2>Reporting</h2>'
+        +'<p>Enter the module password to continue.</p>'
+        +'<label>Password</label>'
+        +'<input id="mgpw" type="password" placeholder="Password" />'
+        +'<div class="errmsg" id="mgerr">Incorrect password.</div>'
+        +'<button id="mgbtn" onclick="mgCheck()">Open</button></div>';
+      document.body.parentNode.insertBefore(gate,document.body);
+      document.getElementById('mgpw').addEventListener('keydown',function(e){
+        if(e.key==='Enter'){e.preventDefault();mgCheck();}
+      });
+      document.getElementById('mgpw').addEventListener('input',function(){
+        document.getElementById('mgerr').classList.remove('show');
+        document.getElementById('mgpw').classList.remove('err');
+      });
+      setTimeout(function(){document.getElementById('mgpw').focus();},80);
+    });
+  }
+  window.mgCheck=function(){
+    var pw=document.getElementById('mgpw').value;
+    var btn=document.getElementById('mgbtn');
+    btn.disabled=true;btn.textContent='Checking...';
+    fetch('https://spfztpokbpomqtiqgggz.supabase.co/rest/v1/apm_settings?key=eq.mod_pass_reporting&select=value',{
+      headers:{'apikey':'sb_publishable_xPXU0xL_YaiWA6k9PWc0Xg_4QYeypNi','Authorization':'Bearer sb_publishable_xPXU0xL_YaiWA6k9PWc0Xg_4QYeypNi'}
+    })
+    .then(function(r){return r.json();})
+    .then(function(d){
+      var correct=d&&d[0]&&d[0].value;
+      if(correct&&pw===correct){
+        sessionStorage.setItem(MK,'1');
+        document.getElementById('mod-gate').remove();
+        document.body.style.display='';
+      }else{
+        document.getElementById('mgerr').classList.add('show');
+        document.getElementById('mgpw').classList.add('err');
+        document.getElementById('mgpw').value='';
+        document.getElementById('mgpw').focus();
+        btn.disabled=false;btn.textContent='Open';
+      }
+    })
+    .catch(function(){
+      document.getElementById('mgerr').textContent='Could not connect. Check your internet.';
+      document.getElementById('mgerr').classList.add('show');
+      btn.disabled=false;btn.textContent='Open';
+    });
+  };
+})();
+(function(){var t=localStorage.getItem('apm_theme')||'light';document.documentElement.setAttribute('data-theme',t);})();
+</script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+:root{--gold:#C8A96E;--gold-dk:#A8874E;--black:#0A0A0A;--bg:#FFFFFF;--bg1:#F5F5F5;--bg2:#EBEBEB;--border:#D8D8D8;--text:#0A0A0A;--text2:#444444;--text3:#888888;--shadow:rgba(0,0,0,.07)}
+[data-theme="dark"]{--bg:#0A0A0A;--bg1:#141414;--bg2:#1E1E1E;--border:#2A2A2A;--text:#F0F0F0;--text2:#AAAAAA;--text3:#666666;--shadow:rgba(0,0,0,.35)}
+*,*::before,*::after{margin:0;padding:0;box-sizing:border-box}
+body{background:var(--bg);color:var(--text);font-family:'Inter',-apple-system,sans-serif;min-height:100vh;-webkit-font-smoothing:antialiased;transition:background .2s,color .2s}
+button{font-family:inherit;cursor:pointer}
+.topbar{display:flex;align-items:center;justify-content:space-between;padding:0 28px;height:56px;border-bottom:1px solid var(--border);background:var(--bg);position:sticky;top:0;z-index:40}
+.topbar-left{display:flex;align-items:center;gap:16px}
+.brand-link{display:flex;align-items:center;gap:10px;text-decoration:none;color:var(--text)}
+.brand-mark{width:30px;height:30px;border-radius:6px;background:var(--gold);display:grid;place-items:center;font-size:13px;font-weight:800;color:var(--black);flex:none}
+.brand-name{font-size:14px;font-weight:700}
+.page-label{font-size:13.5px;color:var(--text3);padding-left:16px;border-left:1px solid var(--border)}
+.topbar-right{display:flex;align-items:center;gap:10px}
+.theme-btn{width:32px;height:32px;border-radius:6px;background:transparent;border:1px solid var(--border);color:var(--text2);display:grid;place-items:center}
+.theme-btn:hover{border-color:var(--gold)}
+.btn{display:inline-flex;align-items:center;gap:6px;padding:8px 16px;border-radius:6px;font-size:13.5px;font-weight:600;border:1px solid var(--border);background:var(--bg1);color:var(--text);cursor:pointer;transition:border-color .15s}
+.btn:hover{border-color:var(--gold)}.btn-sm{padding:6px 12px;font-size:12.5px}
+.wrap{max-width:1280px;margin:0 auto;padding:28px}
+.page-head{margin-bottom:24px;display:flex;align-items:center;justify-content:space-between}
+.page-head h1{font-size:20px;font-weight:700}
+.page-head .sub{font-size:13px;color:var(--text3);margin-top:3px}
+.kpi-row{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:14px;margin-bottom:24px}
+.kpi{border:1px solid var(--border);border-radius:10px;padding:20px 22px;background:var(--bg)}
+.kpi .lbl{font-size:11px;font-weight:600;letter-spacing:.1em;text-transform:uppercase;color:var(--text3);margin-bottom:8px}
+.kpi .val{font-size:24px;font-weight:700;font-variant-numeric:tabular-nums}
+.kpi .sub{font-size:12.5px;color:var(--text3);margin-top:4px}
+.kpi.gold .val{color:var(--gold-dk)}
+.kpi.green .val{color:#2D7D46}
+.kpi.red .val{color:#C0392B}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:20px}
+@media(max-width:860px){.grid2{grid-template-columns:1fr}}
+.card{border:1px solid var(--border);border-radius:10px;padding:22px;background:var(--bg)}
+.card h3{font-size:13px;font-weight:700;letter-spacing:.02em;margin-bottom:18px;text-transform:uppercase;color:var(--text3)}
+.bar-row{display:grid;grid-template-columns:130px 1fr 110px;align-items:center;gap:12px;margin-bottom:11px;font-size:13px}
+.bar-track{height:20px;background:var(--bg1);border-radius:5px;overflow:hidden}
+.bar-fill{height:100%;border-radius:5px;min-width:2px}
+.tbl-wrap{border:1px solid var(--border);border-radius:8px;overflow:hidden;margin-bottom:20px}
+table{width:100%;border-collapse:collapse;font-size:13.5px}
+thead th{background:var(--bg1);padding:11px 16px;text-align:left;font-size:11px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--text3);border-bottom:1px solid var(--border)}
+tbody td{padding:12px 16px;border-bottom:1px solid var(--border);vertical-align:middle}
+tbody tr:last-child td{border-bottom:none}
+.mono{font-variant-numeric:tabular-nums;font-size:13px}.dim{color:var(--text3);font-size:12.5px}.right{text-align:right}
+.badge{display:inline-block;padding:3px 9px;border-radius:4px;font-size:11.5px;font-weight:600;border:1px solid}
+.loading{padding:60px;text-align:center;color:var(--text3)}
+.progress{height:8px;background:var(--bg2);border-radius:4px;overflow:hidden;margin-top:8px}
+.progress span{display:block;height:100%;border-radius:4px;background:var(--gold)}
+.progress span.red{background:#C0392B}
+#toasts{position:fixed;bottom:20px;right:20px;display:flex;flex-direction:column;gap:8px;z-index:90}
+.toast{background:var(--bg);border:1px solid var(--border);border-left:3px solid var(--gold);border-radius:7px;padding:11px 16px;font-size:13.5px;min-width:220px;box-shadow:0 4px 16px var(--shadow);animation:tin .2s ease}
+@keyframes tin{from{transform:translateX(12px);opacity:0}}
+</style>
+</head>
+<body>
+<header class="topbar">
+  <div class="topbar-left">
+    <a class="brand-link" href="dashboard.html"><div class="brand-mark">AP</div><span class="brand-name">APM Metal Works</span></a>
+    <span class="page-label">Reporting</span>
+  </div>
+  <div class="topbar-right">
+    <button class="theme-btn" onclick="toggleTheme()">
+      <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="8" cy="8" r="3"/><path d="M8 1v1.5M8 13.5V15M1 8h1.5M13.5 8H15M3.05 3.05l1.06 1.06M11.89 11.89l1.06 1.06M3.05 12.95l1.06-1.06M11.89 4.11l1.06-1.06"/></svg>
+    </button>
+    <button class="btn btn-sm" onclick="loadAll()">Refresh</button>
+  </div>
+</header>
+
+<div class="wrap">
+  <div class="page-head">
+    <div>
+      <h1>Business Overview</h1>
+      <div class="sub" id="asof">Loading all modules...</div>
+    </div>
+  </div>
+  <div id="content"><div class="loading">Pulling data from all modules...</div></div>
+</div>
+<div id="toasts"></div>
+
+<script>
+const SB_URL='https://spfztpokbpomqtiqgggz.supabase.co';
+const SB_KEY='sb_publishable_xPXU0xL_YaiWA6k9PWc0Xg_4QYeypNi';
+const sb=supabase.createClient(SB_URL,SB_KEY);
+const $=id=>document.getElementById(id);
+const esc=s=>(s??'').toString().replaceAll('&','&amp;').replaceAll('<','&lt;').replaceAll('>','&gt;');
+const fmtSAR=n=>'SAR '+Number(n||0).toLocaleString('en-US',{maximumFractionDigits:0});
+const num=v=>Number(v||0);
+const fmtDate=d=>d?new Date(d).toLocaleDateString('en-GB',{day:'numeric',month:'short',year:'numeric'}):'--';
+function toggleTheme(){const n=document.documentElement.getAttribute('data-theme')==='dark'?'light':'dark';document.documentElement.setAttribute('data-theme',n);localStorage.setItem('apm_theme',n);}
+function toast(m,e){const t=document.createElement('div');t.className='toast'+(e?' err':'');t.textContent=m;$('toasts').appendChild(t);setTimeout(()=>t.remove(),3800);}
+
+async function loadAll(){
+  $('content').innerHTML='<div class="loading">Pulling data from all modules...</div>';
+  const now=new Date(),m=now.getMonth(),y=now.getFullYear();
+  const monthStart=`${y}-${String(m+1).padStart(2,'0')}-01`;
+
+  const[invR,suppInvR,projR,costsR,boqR,empR,leaveR,leadR,invItemsR,stockR,otR]=await Promise.all([
+    sb.from('invoices').select('*'),
+    sb.from('supplier_invoices').select('*'),
+    sb.from('apm_projects').select('*'),
+    sb.from('apm_costs').select('*'),
+    sb.from('apm_boq').select('project_id,amount'),
+    sb.from('employees').select('id,name,salary,allowances,status,department'),
+    sb.from('leave_requests').select('*').eq('status','approved'),
+    sb.from('crm_leads').select('*'),
+    sb.from('invoices').select('id,total,payments').gte('created_at',monthStart),
+    sb.from('inventory').select('quantity,unit_cost,reorder_level'),
+    sb.from('overtime').select('hours,rate_mult,employee_id'),
+  ]);
+
+  const invoices=invR.data||[];
+  const suppInvs=suppInvR.data||[];
+  const projects=projR.data||[];
+  const costs=costsR.data||[];
+  const boq=boqR.data||[];
+  const emps=empR.data||[];
+  const leaves=leaveR.data||[];
+  const leads=leadR.data||[];
+  const stock=stockR.data||[];
+  const otRows=otR.data||[];
+
+  // -- Revenue (customer invoices) --
+  const paidOf=inv=>(inv.payments||[]).reduce((s,p)=>s+num(p.amount),0);
+  const totalInvoiced=invoices.reduce((s,i)=>s+num(i.total),0);
+  const totalCollected=invoices.reduce((s,i)=>s+paidOf(i),0);
+  const totalOutstanding=totalInvoiced-totalCollected;
+  const overdueInvs=invoices.filter(i=>{
+    const bal=num(i.total)-paidOf(i);
+    return bal>0.01&&i.due_date&&i.due_date<new Date().toISOString().slice(0,10);
+  });
+
+  // -- Costs --
+  const totalCosts=costs.reduce((s,c)=>s+num(c.amount),0);
+  const totalBoqValue=boq.reduce((s,b)=>s+num(b.amount),0);
+  const netMargin=totalBoqValue-totalCosts;
+  const marginPct=totalBoqValue?(netMargin/totalBoqValue*100):0;
+
+  // -- Supplier bills --
+  const totalBills=suppInvs.reduce((s,b)=>s+num(b.total),0);
+  const billsPaid=suppInvs.reduce((s,b)=>s+(b.payments||[]).reduce((a,p)=>a+num(p.amount),0),0);
+
+  // -- HR --
+  const activeEmps=emps.filter(e=>e.status==='active');
+  const monthlyPayroll=activeEmps.reduce((s,e)=>s+num(e.salary)+num(e.allowances),0);
+  const todayStr=new Date().toISOString().slice(0,10);
+  const onLeave=leaves.filter(l=>l.from_date<=todayStr&&l.to_date>=todayStr).length;
+  const totalOTHours=otRows.reduce((s,o)=>s+num(o.hours),0);
+
+  // -- CRM --
+  const openLeads=leads.filter(l=>!['won','lost'].includes(l.stage));
+  const pipelineVal=openLeads.reduce((s,l)=>s+num(l.value),0);
+  const wonLeads=leads.filter(l=>l.stage==='won');
+  const convRate=leads.length?(wonLeads.length/leads.length*100):0;
+
+  // -- Inventory --
+  const stockValue=stock.reduce((s,i)=>s+num(i.quantity)*num(i.unit_cost),0);
+  const lowStock=stock.filter(i=>num(i.quantity)<=num(i.reorder_level)).length;
+
+  // -- Projects by status --
+  const projActive=projects.filter(p=>p.status==='active').length;
+  const projDone=projects.filter(p=>p.status==='completed').length;
+
+  // -- Cost breakdown by category --
+  const CAT_LABELS={purchase:'Purchases',payroll:'Payroll',direct:'Direct',indirect:'Indirect',goci:'GOCI'};
+  const byCat=Object.keys(CAT_LABELS).map(k=>({key:k,label:CAT_LABELS[k],val:costs.filter(c=>c.category===k).reduce((s,c)=>s+num(c.amount),0)})).sort((a,b)=>b.val-a.val);
+  const maxCat=Math.max(1,...byCat.map(c=>c.val));
+
+  // -- Top projects by cost --
+  const projCosts=projects.map(p=>{
+    const c=costs.filter(x=>x.project_id===p.id).reduce((s,x)=>s+num(x.amount),0);
+    const b=boq.filter(x=>x.project_id===p.id).reduce((s,x)=>s+num(x.amount),0);
+    return{...p,cost:c,boq:b,margin:b-c,marginPct:b?(b-c)/b*100:0};
+  }).sort((a,b)=>b.cost-a.cost).slice(0,6);
+
+  // -- Dept headcount --
+  const depts={};
+  activeEmps.forEach(e=>{const d=e.department||'Other';depts[d]=(depts[d]||0)+1;});
+  const deptRows=Object.entries(depts).sort((a,b)=>b[1]-a[1]);
+
+  $('asof').textContent='Last updated '+new Date().toLocaleString('en-GB',{day:'numeric',month:'short',year:'numeric',hour:'2-digit',minute:'2-digit'});
+
+  $('content').innerHTML=`
+    <div class="kpi-row">
+      <div class="kpi gold"><div class="lbl">Total invoiced</div><div class="val">${fmtSAR(totalInvoiced)}</div><div class="sub">Collected ${fmtSAR(totalCollected)}</div></div>
+      <div class="kpi ${netMargin>=0?'green':'red'}"><div class="lbl">Net margin (all projects)</div><div class="val">${marginPct.toFixed(1)}%</div><div class="sub">${fmtSAR(netMargin)}</div></div>
+      <div class="kpi"><div class="lbl">Total costs</div><div class="val">${fmtSAR(totalCosts)}</div><div class="sub">BOQ value ${fmtSAR(totalBoqValue)}</div></div>
+      <div class="kpi ${totalOutstanding>0?'red':'green'}"><div class="lbl">Outstanding receivables</div><div class="val">${fmtSAR(totalOutstanding)}</div><div class="sub">${overdueInvs.length} overdue invoice${overdueInvs.length!==1?'s':''}</div></div>
+      <div class="kpi"><div class="lbl">Monthly payroll</div><div class="val">${fmtSAR(monthlyPayroll)}</div><div class="sub">${activeEmps.length} active employee${activeEmps.length!==1?'s':''}</div></div>
+      <div class="kpi gold"><div class="lbl">Pipeline value</div><div class="val">${fmtSAR(pipelineVal)}</div><div class="sub">${openLeads.length} open lead${openLeads.length!==1?'s':''} &middot; ${convRate.toFixed(0)}% conversion</div></div>
+    </div>
+
+    <div class="grid2">
+      <div class="card">
+        <h3>Cost breakdown</h3>
+        ${byCat.map(c=>{const w=Math.round(c.val/maxCat*100);return`<div class="bar-row"><span>${c.label}</span><div class="bar-track"><div class="bar-fill" style="width:${w}%;background:var(--gold)"></div></div><span class="mono right">${fmtSAR(c.val)}</span></div>`;}).join('')}
+      </div>
+      <div class="card">
+        <h3>Projects overview</h3>
+        ${projCosts.length?projCosts.map(p=>{
+          const pct=p.boq?Math.min(100,Math.round(p.cost/p.boq*100)):0;
+          const over=p.boq>0&&p.cost>p.boq;
+          return`<div style="margin-bottom:14px">
+            <div style="display:flex;justify-content:space-between;font-size:13px;margin-bottom:4px">
+              <span><strong>${esc(p.name)}</strong> <span class="dim">${esc(p.client||'')}</span></span>
+              <span style="color:${p.margin>=0?'#2D7D46':'#C0392B'};font-weight:600;font-size:12.5px">${p.marginPct.toFixed(1)}%</span>
+            </div>
+            <div class="progress ${over?'red':''}"><span class="${over?'red':''}" style="width:${pct}%"></span></div>
+          </div>`;
+        }).join(''):'<div class="dim">No project data yet.</div>'}
+      </div>
+    </div>
+
+    <div class="grid2">
+      <div class="card">
+        <h3>Invoicing summary</h3>
+        <table><thead><tr><th>Invoice</th><th>Client</th><th>Total</th><th>Collected</th><th>Status</th></tr></thead><tbody>
+        ${invoices.slice(0,8).map(inv=>{
+          const paid=paidOf(inv);const bal=num(inv.total)-paid;
+          const st=bal<=0.01?{l:'Paid',c:'#2D7D46'}:inv.due_date&&inv.due_date<new Date().toISOString().slice(0,10)?{l:'Overdue',c:'#C0392B'}:{l:'Unpaid',c:'#C8A96E'};
+          return`<tr><td class="mono">${esc(inv.inv_no||'--')}</td><td>${esc(inv.client_name||'--')}</td><td class="mono right">${fmtSAR(inv.total)}</td><td class="mono right">${fmtSAR(paid)}</td><td><span class="badge" style="color:${st.c};border-color:${st.c}44">${st.l}</span></td></tr>`;
+        }).join('')}
+        ${!invoices.length?'<tr><td colspan="5" style="text-align:center;color:var(--text3);padding:20px">No invoices yet</td></tr>':''}
+        </tbody></table>
+      </div>
+      <div class="card">
+        <h3>HR snapshot</h3>
+        <div class="kpi-row" style="grid-template-columns:1fr 1fr;gap:10px;margin-bottom:18px">
+          <div class="kpi" style="padding:14px 16px"><div class="lbl">Active staff</div><div class="val" style="font-size:20px">${activeEmps.length}</div></div>
+          <div class="kpi" style="padding:14px 16px"><div class="lbl">On leave today</div><div class="val" style="font-size:20px">${onLeave}</div></div>
+          <div class="kpi" style="padding:14px 16px"><div class="lbl">OT hours (total)</div><div class="val" style="font-size:20px">${totalOTHours.toFixed(0)}h</div></div>
+          <div class="kpi" style="padding:14px 16px"><div class="lbl">Supplier bills owed</div><div class="val" style="font-size:18px">${fmtSAR(totalBills-billsPaid)}</div></div>
+        </div>
+        <h3 style="margin-bottom:12px">By department</h3>
+        ${deptRows.map(([d,n])=>`<div class="bar-row"><span>${esc(d)}</span><div class="bar-track"><div class="bar-fill" style="width:${Math.round(n/activeEmps.length*100)}%;background:var(--gold)"></div></div><span class="mono right">${n}</span></div>`).join('')}
+        ${!deptRows.length?'<div class="dim">No employee data yet.</div>':''}
+      </div>
+    </div>
+
+    <div class="grid2">
+      <div class="card">
+        <h3>CRM pipeline by stage</h3>
+        ${['new','contacted','quoted','in_progress','won','lost'].map(s=>{
+          const n=leads.filter(l=>l.stage===s).length;
+          const v=leads.filter(l=>l.stage===s).reduce((a,l)=>a+num(l.value),0);
+          const colors={new:'#888',contacted:'#C8A96E',quoted:'#A8874E',in_progress:'#C8A96E',won:'#2D7D46',lost:'#C0392B'};
+          const labels={new:'New',contacted:'Contacted',quoted:'Quoted',in_progress:'In Progress',won:'Won',lost:'Lost'};
+          return`<div class="bar-row"><span>${labels[s]}</span><div class="bar-track"><div class="bar-fill" style="width:${leads.length?Math.round(n/leads.length*100):0}%;background:${colors[s]}"></div></div><span class="mono right dim">${n} (${fmtSAR(v)})</span></div>`;
+        }).join('')}
+      </div>
+      <div class="card">
+        <h3>Inventory health</h3>
+        <div style="display:flex;gap:24px;margin-bottom:20px">
+          <div><div class="lbl">Stock value</div><div style="font-size:20px;font-weight:700;color:var(--gold-dk)">${fmtSAR(stockValue)}</div></div>
+          <div><div class="lbl">Low stock alerts</div><div style="font-size:20px;font-weight:700;color:${lowStock>0?'#C0392B':'#2D7D46'}">${lowStock}</div></div>
+          <div><div class="lbl">Active projects</div><div style="font-size:20px;font-weight:700">${projActive}</div></div>
+          <div><div class="lbl">Completed</div><div style="font-size:20px;font-weight:700;color:#2D7D46">${projDone}</div></div>
+        </div>
+        ${lowStock>0?`<div style="padding:12px 14px;border:1px solid #C0392B44;background:#FDF2F2;border-radius:7px;font-size:13px;color:#C0392B"><strong>${lowStock} item${lowStock!==1?'s':''} below reorder level.</strong> Check Inventory module.</div>`:'<div style="padding:12px 14px;border:1px solid #2D7D4644;background:#F0FAF4;border-radius:7px;font-size:13px;color:#2D7D46">All stock levels healthy.</div>'}
+      </div>
+    </div>`;
+}
+
+loadAll();
+</script>
+</body>
+</html>
