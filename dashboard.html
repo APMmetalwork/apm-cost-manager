@@ -1,0 +1,322 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>APM Metal Works &mdash; Dashboard</title>
+<style>
+:root {
+  --gold: #C8A96E; --gold-dk: #A8874E; --black: #0A0A0A;
+  --bg: #FFFFFF; --bg1: #F5F5F5; --bg2: #EBEBEB;
+  --border: #D8D8D8; --text: #0A0A0A; --text2: #444444; --text3: #888888;
+  --shadow: rgba(0,0,0,.07);
+}
+[data-theme="dark"] {
+  --bg: #0A0A0A; --bg1: #141414; --bg2: #1E1E1E;
+  --border: #2A2A2A; --text: #F0F0F0; --text2: #AAAAAA; --text3: #666666;
+  --shadow: rgba(0,0,0,.35);
+}
+*, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+body {
+  background: var(--bg); color: var(--text);
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  min-height: 100vh; -webkit-font-smoothing: antialiased; transition: background .2s, color .2s;
+}
+button { font-family: inherit; cursor: pointer; }
+
+/* topbar */
+.topbar {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 0 28px; height: 56px;
+  border-bottom: 1px solid var(--border); background: var(--bg);
+  position: sticky; top: 0; z-index: 40;
+}
+.brand { display: flex; align-items: center; gap: 10px; }
+.mark { width: 30px; height: 30px; border-radius: 6px; background: var(--gold); display: grid; place-items: center; font-size: 13px; font-weight: 800; color: var(--black); }
+.brand-name { font-size: 14px; font-weight: 700; letter-spacing: -.01em; }
+.topbar-right { display: flex; align-items: center; gap: 10px; }
+.theme-btn {
+  width: 32px; height: 32px; border-radius: 6px; background: transparent;
+  border: 1px solid var(--border); color: var(--text2); font-size: 13px;
+  display: grid; place-items: center; transition: border-color .15s;
+}
+.theme-btn:hover { border-color: var(--gold); }
+.signout-btn {
+  padding: 6px 14px; border-radius: 6px; border: 1px solid var(--border);
+  background: transparent; color: var(--text3); font-size: 13px; font-weight: 500;
+  transition: border-color .15s, color .15s;
+}
+.signout-btn:hover { border-color: var(--gold); color: var(--text); }
+
+/* main */
+.wrap { max-width: 1100px; margin: 0 auto; padding: 40px 28px; }
+.page-head { margin-bottom: 32px; }
+.page-head h1 { font-size: 22px; font-weight: 700; letter-spacing: -.02em; }
+.page-head p { color: var(--text3); font-size: 14px; margin-top: 4px; }
+
+/* grid */
+.grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 1px;
+  background: var(--border);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  overflow: hidden;
+}
+@media(max-width: 780px) { .grid { grid-template-columns: repeat(2,1fr); } }
+@media(max-width: 500px) { .grid { grid-template-columns: 1fr; } }
+
+.module-card {
+  background: var(--bg); padding: 28px 24px;
+  text-decoration: none; color: var(--text);
+  display: flex; flex-direction: column; gap: 8px;
+  transition: background .15s;
+  position: relative;
+}
+.module-card:hover { background: var(--bg1); }
+.module-card::after {
+  content: ''; position: absolute; bottom: 0; left: 24px; right: 24px;
+  height: 2px; background: var(--gold); transform: scaleX(0);
+  transform-origin: left; transition: transform .2s ease;
+}
+.module-card:hover::after { transform: scaleX(1); }
+.module-card:focus-visible { outline: 2px solid var(--gold); outline-offset: -2px; }
+
+.card-label {
+  font-size: 11px; font-weight: 600; letter-spacing: .12em;
+  text-transform: uppercase; color: var(--gold-dk); margin-bottom: 2px;
+}
+.card-name { font-size: 17px; font-weight: 700; letter-spacing: -.01em; }
+.card-desc { font-size: 13px; color: var(--text3); line-height: 1.55; }
+.card-arrow { font-size: 16px; color: var(--border); margin-top: auto; padding-top: 12px; transition: color .15s; }
+.module-card:hover .card-arrow { color: var(--gold); }
+
+/* locked state */
+.module-card.locked { opacity: .5; pointer-events: none; }
+
+/* module login modal */
+.overlay { position: fixed; inset: 0; background: rgba(0,0,0,.5); display: none; align-items: center; justify-content: center; z-index: 60; padding: 16px; }
+.overlay.open { display: flex; }
+.modal {
+  background: var(--bg); border: 1px solid var(--border); border-radius: 10px;
+  padding: 28px; width: 100%; max-width: 360px;
+  box-shadow: 0 8px 32px var(--shadow);
+}
+.modal h2 { font-size: 16px; font-weight: 700; margin-bottom: 4px; }
+.modal .msub { font-size: 13px; color: var(--text3); margin-bottom: 22px; }
+.field label { display: block; font-size: 11.5px; font-weight: 600; letter-spacing: .08em; text-transform: uppercase; color: var(--text3); margin-bottom: 7px; }
+.field input { width: 100%; padding: 10px 12px; border: 1px solid var(--border); border-radius: 6px; background: var(--bg1); color: var(--text); font-size: 14px; font-family: inherit; }
+.field input:focus { outline: none; border-color: var(--gold); }
+.field input.err { border-color: #C0392B; }
+.field { margin-bottom: 14px; }
+.merr { display: none; font-size: 12.5px; color: #C0392B; margin-bottom: 12px; }
+.merr.show { display: block; }
+.modal-foot { display: flex; gap: 8px; justify-content: flex-end; margin-top: 20px; }
+.btn {
+  padding: 8px 16px; border-radius: 6px; font-size: 13.5px; font-weight: 600;
+  border: 1px solid var(--border); background: var(--bg1); color: var(--text); cursor: pointer;
+  transition: border-color .15s;
+}
+.btn:hover { border-color: var(--gold); }
+.btn-gold { background: var(--gold); border-color: var(--gold); color: var(--black); }
+.btn-gold:hover { background: var(--gold-dk); border-color: var(--gold-dk); }
+</style>
+</head>
+<body>
+
+<header class="topbar">
+  <div class="brand">
+    <div class="mark">AP</div>
+    <span class="brand-name">APM Metal Works</span>
+  </div>
+  <div class="topbar-right">
+    <button class="theme-btn" onclick="toggleTheme()" title="Toggle theme">
+      <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6">
+        <circle cx="8" cy="8" r="3"/>
+        <path d="M8 1v1.5M8 13.5V15M1 8h1.5M13.5 8H15M3.05 3.05l1.06 1.06M11.89 11.89l1.06 1.06M3.05 12.95l1.06-1.06M11.89 4.11l1.06-1.06"/>
+      </svg>
+    </button>
+    <button class="signout-btn" onclick="signOut()">Sign out</button>
+  </div>
+</header>
+
+<main class="wrap">
+  <div class="page-head">
+    <h1>Dashboard</h1>
+    <p>Select a module to continue.</p>
+  </div>
+
+  <div class="grid">
+    <a class="module-card" data-module="crm" data-href="crm.html" href="#" onclick="openModule(event,'crm','crm.html','CRM')">
+      <div class="card-label">Module 01</div>
+      <div class="card-name">CRM <span style="font-size:12px;font-weight:500;color:var(--text3)">(Client Relationship Management)</span></div>
+      <div class="card-desc">Contacts, leads and pipeline management.</div>
+      <div class="card-arrow">&#8594;</div>
+    </a>
+
+    <a class="module-card" data-module="quotations" data-href="quotations.html" href="#" onclick="openModule(event,'quotations','quotations.html','Quotations')">
+      <div class="card-label">Module 02</div>
+      <div class="card-name">Quotations</div>
+      <div class="card-desc">Build and send quotes with VAT line items.</div>
+      <div class="card-arrow">&#8594;</div>
+    </a>
+
+    <a class="module-card" data-module="invoicing" data-href="invoicing.html" href="#" onclick="openModule(event,'invoicing','invoicing.html','Invoicing')">
+      <div class="card-label">Module 03</div>
+      <div class="card-name">Invoicing</div>
+      <div class="card-desc">VAT invoices from quotes, payment tracking.</div>
+      <div class="card-arrow">&#8594;</div>
+    </a>
+
+    <a class="module-card" data-module="inventory" data-href="inventory.html" href="#" onclick="openModule(event,'inventory','inventory.html','Inventory')">
+      <div class="card-label">Module 04</div>
+      <div class="card-name">Inventory</div>
+      <div class="card-desc">Stock levels, reorder alerts, and stock value.</div>
+      <div class="card-arrow">&#8594;</div>
+    </a>
+
+    <a class="module-card" data-module="hr" data-href="hr.html" href="#" onclick="openModule(event,'hr','hr.html','HR')">
+      <div class="card-label">Module 05</div>
+      <div class="card-name">HR <span style="font-size:12px;font-weight:500;color:var(--text3)">(Human Resources)</span></div>
+      <div class="card-desc">Employee records, payroll and leave approvals.</div>
+      <div class="card-arrow">&#8594;</div>
+    </a>
+
+    <a class="module-card" data-module="costmanager" data-href="cost-manager.html" href="#" onclick="openModule(event,'costmanager','cost-manager.html','Cost Manager',false)">
+      <div class="card-label">Module 06</div>
+      <div class="card-name">Cost Manager</div>
+      <div class="card-desc">BOQ, purchases, payroll, approvals and exports.</div>
+      <div class="card-arrow">&#8594;</div>
+    </a>
+    <a class="module-card" data-module="po" data-href="purchase-orders.html" href="#" onclick="openModule(event,'po','purchase-orders.html','Purchase Orders',false)">
+      <div class="card-label">Module 07</div>
+      <div class="card-name">Purchase Orders <span style="font-size:12px;font-weight:500;color:var(--text3)">(PO)</span></div>
+      <div class="card-desc">Formal POs to suppliers with line items, VAT and print.</div>
+      <div class="card-arrow">&#8594;</div>
+    </a>
+    <a class="module-card" data-module="reporting" data-href="reporting.html" href="#" onclick="openModule(event,'reporting','reporting.html','Reporting',false)">
+      <div class="card-label">Module 08</div>
+      <div class="card-name">Reporting</div>
+      <div class="card-desc">Cross-module analytics: revenue, costs, HR, CRM and inventory.</div>
+      <div class="card-arrow">&#8594;</div>
+    </a>
+  </div>
+</main>
+
+<!-- Module password modal -->
+<div class="overlay" id="overlay">
+  <div class="modal">
+    <h2 id="mTitle">Enter password</h2>
+    <p class="msub" id="mSub">This module requires a separate password.</p>
+    <div class="merr" id="merr">Incorrect password.</div>
+    <div class="field">
+      <label>Password</label>
+      <input id="mPw" type="password" autocomplete="current-password" placeholder="Password" onkeydown="if(event.key==='Enter')confirmModule()">
+    </div>
+    <div class="modal-foot">
+      <button class="btn" onclick="closeModal()">Cancel</button>
+      <button class="btn btn-gold" onclick="confirmModule()">Open</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// -- Per-module passwords ------------------------------------------------
+const MODULE_PASS = {
+  crm:         'crm',
+  quotations:  'quotations',
+  invoicing:   'invoicing',
+  inventory:   'inventory',
+  hr:          'hr',
+  costmanager: 'costmanager',
+  po:          'po2024',
+  reporting:   'reporting',
+};
+// ------------------------------------------------------------------------
+
+const SESSION_KEY = 'apm_auth';
+const MOD_KEY = id => 'apm_mod_' + id;
+const TTL = 10 * 60 * 60 * 1000;
+const MOD_TTL = 10 * 60 * 60 * 1000;
+
+// Theme
+const savedTheme = localStorage.getItem('apm_theme') || 'light';
+document.documentElement.setAttribute('data-theme', savedTheme);
+function toggleTheme() {
+  const next = document.documentElement.getAttribute('data-theme') === 'dark' ? 'light' : 'dark';
+  document.documentElement.setAttribute('data-theme', next);
+  localStorage.setItem('apm_theme', next);
+}
+
+// Guard dashboard itself
+try {
+  const s = JSON.parse(sessionStorage.getItem(SESSION_KEY));
+  if (!s || Date.now() - s.ts > TTL) throw 0;
+} catch(e) { location.replace('login.html'); }
+
+function signOut() {
+  sessionStorage.clear();
+  location.replace('login.html');
+}
+
+// Module unlock
+let pending = null; // { module, href, external }
+
+function isModuleUnlocked(id) {
+  try {
+    const s = JSON.parse(sessionStorage.getItem(MOD_KEY(id)));
+    return s && Date.now() - s.ts < MOD_TTL;
+  } catch(e) { return false; }
+}
+
+function openModule(e, id, href, label, external) {
+  e.preventDefault();
+  if (isModuleUnlocked(id)) {
+    navigate(href, external);
+    return;
+  }
+  pending = { id, href, label, external };
+  document.getElementById('mTitle').textContent = label;
+  document.getElementById('mSub').textContent = 'Enter the ' + label + ' password to continue.';
+  document.getElementById('mPw').value = '';
+  document.getElementById('merr').classList.remove('show');
+  document.getElementById('mPw').classList.remove('err');
+  document.getElementById('overlay').classList.add('open');
+  setTimeout(() => document.getElementById('mPw').focus(), 80);
+}
+
+function confirmModule() {
+  if (!pending) return;
+  const pw = document.getElementById('mPw').value;
+  const correct = MODULE_PASS[pending.id];
+  if (pw === correct) {
+    sessionStorage.setItem(MOD_KEY(pending.id), JSON.stringify({ ts: Date.now() }));
+    closeModal();
+    navigate(pending.href, pending.external);
+  } else {
+    document.getElementById('merr').classList.add('show');
+    document.getElementById('mPw').classList.add('err');
+    document.getElementById('mPw').value = '';
+    document.getElementById('mPw').focus();
+    setTimeout(() => document.getElementById('mPw').classList.remove('err'), 1200);
+  }
+}
+
+function navigate(href, external) {
+  // Navigate in the same tab &mdash; window.open gets blocked by popup blockers,
+  // which is why the Cost Manager appeared to do nothing.
+  location.href = href;
+}
+
+function closeModal() {
+  document.getElementById('overlay').classList.remove('open');
+  pending = null;
+}
+
+document.getElementById('overlay').addEventListener('click', e => { if (e.target === document.getElementById('overlay')) closeModal(); });
+document.addEventListener('keydown', e => { if (e.key === 'Escape') closeModal(); });
+document.getElementById('mPw').addEventListener('input', () => document.getElementById('merr').classList.remove('show'));
+</script>
+</body>
+</html>
