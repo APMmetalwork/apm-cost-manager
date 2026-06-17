@@ -1,0 +1,639 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CRM &mdash; APM Metal Works</title>
+<script>
+(function(){
+  var K='apm_auth',T=10*60*60*1000;
+  try{var s=JSON.parse(sessionStorage.getItem(K));if(!s||Date.now()-s.ts>T)throw 0;}
+  catch(e){window.location.href='login.html';return;}
+  var MK='apm_mod_crm';
+  
+    document.addEventListener('DOMContentLoaded',function(){
+      document.body.style.display='none';
+      var gate=document.createElement('div');gate.id='mod-gate';
+      gate.innerHTML='<style>'
+        +'#mod-gate{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;'
+        +'background:var(--bg,#fff);z-index:9999;font-family:inherit}'
+        +'#mod-gate .gc{width:100%;max-width:360px;padding:24px;border:1px solid var(--border,#d8d8d8);'
+        +'border-radius:10px;box-shadow:0 4px 20px rgba(0,0,0,.08)}'
+        +'#mod-gate h2{font-size:17px;font-weight:700;margin-bottom:4px}'
+        +'#mod-gate p{font-size:13px;color:var(--text3,#888);margin-bottom:20px}'
+        +'#mod-gate label{display:block;font-size:11px;font-weight:600;letter-spacing:.08em;'
+        +'text-transform:uppercase;color:var(--text3,#888);margin-bottom:7px}'
+        +'#mod-gate input{width:100%;padding:11px 13px;border:1px solid var(--border,#d8d8d8);'
+        +'border-radius:6px;background:var(--bg1,#f5f5f5);color:var(--text,#0a0a0a);'
+        +'font-size:14px;font-family:inherit;box-sizing:border-box}'
+        +'#mod-gate input:focus{outline:none;border-color:#C8A96E}'
+        +'#mod-gate input.err{border-color:#C0392B}'
+        +'#mod-gate .errmsg{display:none;color:#C0392B;font-size:12.5px;margin-top:8px}'
+        +'#mod-gate .errmsg.show{display:block}'
+        +'#mod-gate button{width:100%;margin-top:14px;padding:11px;background:#C8A96E;'
+        +'border:none;border-radius:6px;color:#0a0a0a;font-size:14px;font-weight:700;cursor:pointer}'
+        +'#mod-gate button:hover{background:#A8874E}'
+        +'#mod-gate button:disabled{opacity:.6;cursor:not-allowed}'
+        +'</style>'
+        +'<div class="gc"><h2>CRM</h2>'
+        +'<p>Enter the module password to continue.</p>'
+        +'<label>Password</label>'
+        +'<input id="mgpw" type="password" placeholder="Password" />'
+        +'<div class="errmsg" id="mgerr">Incorrect password.</div>'
+        +'<button id="mgbtn" onclick="mgCheck()">Open</button></div>';
+      document.body.parentNode.insertBefore(gate,document.body);
+      document.getElementById('mgpw').addEventListener('keydown',function(e){
+        if(e.key==='Enter'){e.preventDefault();mgCheck();}
+      });
+      document.getElementById('mgpw').addEventListener('input',function(){
+        document.getElementById('mgerr').classList.remove('show');
+        document.getElementById('mgpw').classList.remove('err');
+      });
+      setTimeout(function(){document.getElementById('mgpw').focus();},80);
+    });
+  }
+  window.mgCheck=function(){
+    var pw=document.getElementById('mgpw').value;
+    var btn=document.getElementById('mgbtn');
+    btn.disabled=true;btn.textContent='Checking...';
+    fetch('https://spfztpokbpomqtiqgggz.supabase.co/rest/v1/apm_settings?key=eq.mod_pass_crm&select=value',{
+      headers:{'apikey':'sb_publishable_xPXU0xL_YaiWA6k9PWc0Xg_4QYeypNi','Authorization':'Bearer sb_publishable_xPXU0xL_YaiWA6k9PWc0Xg_4QYeypNi'}
+    })
+    .then(function(r){return r.json();})
+    .then(function(d){
+      var correct=d&&d[0]&&d[0].value;
+      if(correct&&pw===correct){
+        
+        document.getElementById('mod-gate').remove();
+        document.body.style.display='';
+      }else{
+        document.getElementById('mgerr').classList.add('show');
+        document.getElementById('mgpw').classList.add('err');
+        document.getElementById('mgpw').value='';
+        document.getElementById('mgpw').focus();
+        btn.disabled=false;btn.textContent='Open';
+      }
+    })
+    .catch(function(){
+      document.getElementById('mgerr').textContent='Could not connect. Check your internet.';
+      document.getElementById('mgerr').classList.add('show');
+      btn.disabled=false;btn.textContent='Open';
+    });
+  };
+})();
+(function(){var t=localStorage.getItem('apm_theme')||'light';document.documentElement.setAttribute('data-theme',t);})();
+</script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+:root{--gold:#C8A96E;--gold-dk:#A8874E;--black:#0A0A0A;--bg:#FFFFFF;--bg1:#F5F5F5;--bg2:#EBEBEB;--border:#D8D8D8;--text:#0A0A0A;--text2:#444444;--text3:#888888;--shadow:rgba(0,0,0,.07)}
+[data-theme="dark"]{--bg:#0A0A0A;--bg1:#141414;--bg2:#1E1E1E;--border:#2A2A2A;--text:#F0F0F0;--text2:#AAAAAA;--text3:#666666;--shadow:rgba(0,0,0,.35)}
+*,*::before,*::after{margin:0;padding:0;box-sizing:border-box}
+body{background:var(--bg);color:var(--text);font-family:'Inter',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;min-height:100vh;-webkit-font-smoothing:antialiased;transition:background .2s,color .2s}
+button{font-family:inherit;cursor:pointer}
+.topbar{display:flex;align-items:center;justify-content:space-between;padding:0 28px;height:56px;border-bottom:1px solid var(--border);background:var(--bg);position:sticky;top:0;z-index:40}
+.topbar-left{display:flex;align-items:center;gap:16px}
+.brand-link{display:flex;align-items:center;gap:10px;text-decoration:none;color:var(--text)}
+.brand-mark{width:30px;height:30px;border-radius:6px;background:var(--gold);display:grid;place-items:center;font-size:13px;font-weight:800;color:var(--black);flex:none}
+.brand-name{font-size:14px;font-weight:700;letter-spacing:-.01em}
+.page-label{font-size:13.5px;color:var(--text3);padding-left:16px;border-left:1px solid var(--border)}
+.topbar-right{display:flex;align-items:center;gap:10px}
+.theme-btn{width:32px;height:32px;border-radius:6px;background:transparent;border:1px solid var(--border);color:var(--text2);display:grid;place-items:center;transition:border-color .15s}
+.theme-btn:hover{border-color:var(--gold)}
+.btn{display:inline-flex;align-items:center;gap:6px;padding:8px 16px;border-radius:6px;font-size:13.5px;font-weight:600;border:1px solid var(--border);background:var(--bg1);color:var(--text);cursor:pointer;transition:border-color .15s,background .15s}
+.btn:hover{border-color:var(--gold)}
+.btn-gold{background:var(--gold);border-color:var(--gold);color:var(--black)}
+.btn-gold:hover{background:var(--gold-dk);border-color:var(--gold-dk)}
+.btn-danger{color:#C0392B;border-color:#C0392B33}.btn-danger:hover{border-color:#C0392B}
+.btn-sm{padding:6px 12px;font-size:12.5px}
+.wrap{max-width:1200px;margin:0 auto;padding:28px}
+.stats-row{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));background:var(--border);border:1px solid var(--border);border-radius:8px;overflow:hidden;margin-bottom:24px}
+.stat-cell{background:var(--bg);padding:18px 22px;border-right:1px solid var(--border)}
+.stat-cell:last-child{border-right:none}
+.stat-lbl{font-size:11px;font-weight:600;letter-spacing:.1em;text-transform:uppercase;color:var(--text3);margin-bottom:6px}
+.stat-val{font-size:22px;font-weight:700;font-variant-numeric:tabular-nums}
+.stat-val.gold{color:var(--gold-dk)}
+.toolbar{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:18px}
+.search-input{padding:8px 12px;border:1px solid var(--border);border-radius:6px;background:var(--bg1);color:var(--text);font-size:13.5px;min-width:220px;flex:1;max-width:320px}
+.search-input:focus{outline:none;border-color:var(--gold)}
+.filter-tabs{display:flex;gap:2px;background:var(--bg1);border:1px solid var(--border);border-radius:6px;padding:3px}
+.ftab{background:transparent;border:none;color:var(--text3);padding:6px 14px;border-radius:4px;font-size:13px;font-weight:500;cursor:pointer}
+.ftab.active{background:var(--bg);color:var(--text);font-weight:600;box-shadow:0 1px 3px var(--shadow)}
+.tbl-wrap{border:1px solid var(--border);border-radius:8px;overflow:hidden}
+table{width:100%;border-collapse:collapse;font-size:13.5px}
+thead th{background:var(--bg1);padding:11px 16px;text-align:left;font-size:11px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--text3);border-bottom:1px solid var(--border);white-space:nowrap}
+tbody td{padding:13px 16px;border-bottom:1px solid var(--border);vertical-align:middle}
+tbody tr:last-child td{border-bottom:none}
+tbody tr.rc{cursor:pointer}
+tbody tr.rc:hover{background:var(--bg1)}
+.mono{font-variant-numeric:tabular-nums;font-size:13px}
+.dim{color:var(--text3);font-size:12.5px}
+.row-btns{display:flex;gap:4px;justify-content:flex-end}
+.ib{width:28px;height:28px;border-radius:5px;border:1px solid var(--border);background:transparent;color:var(--text3);font-size:13px;display:grid;place-items:center;cursor:pointer}
+.ib:hover{border-color:var(--gold);color:var(--text)}
+.badge{display:inline-block;padding:3px 9px;border-radius:4px;font-size:11.5px;font-weight:600;border:1px solid}
+.empty{padding:52px 20px;text-align:center;color:var(--text3);font-size:14px}
+.empty strong{display:block;color:var(--text);margin-bottom:4px}
+/* kanban */
+.board{display:flex;gap:12px;overflow-x:auto;padding-bottom:8px}
+.col{background:var(--bg1);border:1px solid var(--border);border-radius:8px;display:flex;flex-direction:column;width:240px;min-width:240px;max-height:74vh}
+.col.over{border-color:var(--gold)}
+.col-head{padding:12px 14px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:8px}
+.col-dot{width:8px;height:8px;border-radius:50%;flex:none}
+.col-head h3{font-size:12px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;flex:1;color:var(--text2)}
+.col-head .cnt{font-size:12px;color:var(--text3);font-variant-numeric:tabular-nums}
+.col-sum{padding:7px 14px;border-bottom:1px solid var(--border);font-size:12px;color:var(--text3);font-variant-numeric:tabular-nums}
+.col-body{padding:10px;display:flex;flex-direction:column;gap:8px;overflow-y:auto;flex:1;min-height:60px}
+.lead-card{background:var(--bg);border:1px solid var(--border);border-radius:6px;padding:12px 13px;cursor:grab;transition:border-color .15s}
+.lead-card:hover{border-color:var(--gold)}
+.lead-card.dragging{opacity:.4}
+.lead-card h4{font-size:13.5px;font-weight:600;margin-bottom:4px}
+.lead-card .who{font-size:12px;color:var(--text3);margin-bottom:8px}
+.lead-card .row{display:flex;justify-content:space-between;align-items:center}
+.lead-card .val{font-size:12.5px;font-weight:600;color:var(--gold-dk);font-variant-numeric:tabular-nums}
+.lead-card .dt{font-size:11px;color:var(--text3)}
+.col-empty{border:1px dashed var(--border);border-radius:6px;padding:12px;text-align:center;font-size:12px;color:var(--text3)}
+/* overlay */
+.overlay{position:fixed;inset:0;background:rgba(0,0,0,.45);display:none;align-items:flex-start;justify-content:center;z-index:60;padding:5vh 16px;overflow-y:auto}
+.overlay.open{display:flex}
+.modal{background:var(--bg);border:1px solid var(--border);border-radius:10px;width:100%;max-width:500px;padding:28px;box-shadow:0 8px 32px var(--shadow)}
+.modal h2{font-size:17px;font-weight:700;margin-bottom:20px}
+.field{margin-bottom:14px}
+.field label{display:block;font-size:11.5px;font-weight:600;letter-spacing:.07em;text-transform:uppercase;color:var(--text3);margin-bottom:6px}
+.field input,.field select,.field textarea{width:100%;background:var(--bg1);border:1px solid var(--border);border-radius:6px;color:var(--text);padding:9px 11px;font-size:14px}
+.field input:focus,.field select:focus,.field textarea:focus{outline:none;border-color:var(--gold)}
+.field textarea{resize:vertical;min-height:70px}
+.f2{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+@media(max-width:520px){.f2{grid-template-columns:1fr}}
+.modal-foot{display:flex;gap:10px;justify-content:flex-end;margin-top:20px;border-top:1px solid var(--border);padding-top:20px}
+.mfl{margin-right:auto}
+#toasts{position:fixed;bottom:20px;right:20px;display:flex;flex-direction:column;gap:8px;z-index:90}
+.toast{background:var(--bg);border:1px solid var(--border);border-left:3px solid var(--gold);border-radius:7px;padding:11px 16px;font-size:13.5px;min-width:220px;box-shadow:0 4px 16px var(--shadow);animation:tin .2s ease}
+.toast.err{border-left-color:#C0392B}
+@keyframes tin{from{transform:translateX(12px);opacity:0}}
+.loading{padding:60px;text-align:center;color:var(--text3)}
+.msub{font-size:13px;color:var(--text3);margin-top:-14px;margin-bottom:18px}
+</style>
+</head>
+<body>
+<header class="topbar">
+  <div class="topbar-left">
+    <a class="brand-link" href="dashboard.html">
+      <div class="brand-mark">AP</div>
+      <span class="brand-name">APM Metal Works</span>
+    </a>
+    <span class="page-label">CRM</span>
+  </div>
+  <div class="topbar-right">
+    <button class="theme-btn" onclick="toggleTheme()" title="Toggle theme">
+      <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="8" cy="8" r="3"/><path d="M8 1v1.5M8 13.5V15M1 8h1.5M13.5 8H15M3.05 3.05l1.06 1.06M11.89 11.89l1.06 1.06M3.05 12.95l1.06-1.06M11.89 4.11l1.06-1.06"/></svg>
+    </button>
+    <button class="btn btn-sm" id="btnContact" onclick="openContactModal()">+ Contact</button>
+    <button class="btn btn-sm" id="btnProject" style="display:none" onclick="openProjectModal()">+ Project</button>
+    <button class="btn btn-gold btn-sm" id="btnLead" onclick="openLeadModal()">+ Lead</button>
+  </div>
+</header>
+
+<div class="wrap">
+  <div class="stats-row">
+    <div class="stat-cell"><div class="stat-lbl">Contacts</div><div class="stat-val" id="stC">&mdash;</div></div>
+    <div class="stat-cell"><div class="stat-lbl">Open Leads</div><div class="stat-val" id="stO">&mdash;</div></div>
+    <div class="stat-cell"><div class="stat-lbl">Pipeline (SAR)</div><div class="stat-val gold" id="stP">&mdash;</div></div>
+    <div class="stat-cell"><div class="stat-lbl">Won This Month</div><div class="stat-val gold" id="stW">&mdash;</div></div>
+  </div>
+
+  <div class="toolbar">
+    <div class="filter-tabs">
+      <button class="ftab active" data-v="pipeline" onclick="switchView('pipeline')">Pipeline</button>
+      <button class="ftab" data-v="leads" onclick="switchView('leads')">Leads</button>
+      <button class="ftab" data-v="contacts" onclick="switchView('contacts')">Contacts</button>
+      <button class="ftab" data-v="projects" onclick="switchView('projects')">Projects</button>
+    </div>
+    <input class="search-input" id="search" placeholder="Search..." oninput="renderAll()">
+  </div>
+
+  <div id="vPipeline"><div class="loading">Loading...</div></div>
+  <div id="vLeads" style="display:none"></div>
+  <div id="vContacts" style="display:none"></div>
+  <div id="vProjects" style="display:none"></div>
+</div>
+
+<!-- Contact modal -->
+<div class="overlay" id="contactOverlay">
+  <div class="modal">
+    <h2 id="cTitle">New contact</h2>
+    <input type="hidden" id="cId">
+    <div class="field"><label>Name</label><input id="cName" placeholder="Eng. Ahmed Al-Qahtani"></div>
+    <div class="f2">
+      <div class="field"><label>Company</label><input id="cCompany" placeholder="Al-Rajhi Construction"></div>
+      <div class="field"><label>City</label><input id="cCity" placeholder="Riyadh"></div>
+    </div>
+    <div class="f2">
+      <div class="field"><label>Phone</label><input id="cPhone" placeholder="9665XXXXXXXX"></div>
+      <div class="field"><label>Email</label><input id="cEmail" placeholder="name@co.com"></div>
+    </div>
+    <div class="field"><label>Notes</label><textarea id="cNotes"></textarea></div>
+    <div class="modal-foot">
+      <button class="btn btn-danger btn-sm mfl" id="cDel" style="display:none" onclick="deleteContact()">Delete</button>
+      <button class="btn btn-sm" onclick="closeModals()">Cancel</button>
+      <button class="btn btn-gold btn-sm" onclick="saveContact()">Save</button>
+    </div>
+  </div>
+</div>
+
+<!-- Lead modal -->
+<div class="overlay" id="leadOverlay">
+  <div class="modal">
+    <h2 id="lTitle">New lead</h2>
+    <input type="hidden" id="lId">
+    <div class="field"><label>Title</label><input id="lTitle2" placeholder="Steel staircase &mdash; villa project"></div>
+    <div class="field"><label>Contact</label><select id="lContact"></select></div>
+    <div class="f2">
+      <div class="field"><label>Value (SAR)</label><input id="lValue" type="number" min="0" step="any" placeholder="25000"></div>
+      <div class="field"><label>Stage</label>
+        <select id="lStage">
+          <option value="new">New</option>
+          <option value="contacted">Contacted</option>
+          <option value="quoted">Quoted</option>
+          <option value="in_progress">In Progress</option>
+          <option value="won">Won</option>
+          <option value="lost">Lost</option>
+        </select>
+      </div>
+    </div>
+    <div class="f2">
+      <div class="field"><label>Expected close</label><input id="lClose" type="date"></div>
+      <div class="field"><label>Source</label>
+        <select id="lSource"><option value="">&mdash;</option><option>Referral</option><option>WhatsApp</option><option>Walk-in</option><option>Phone</option><option>Repeat client</option><option>Other</option></select>
+      </div>
+    </div>
+    <div class="field"><label>Notes</label><textarea id="lNotes"></textarea></div>
+    <div class="modal-foot">
+      <button class="btn btn-danger btn-sm mfl" id="lDel" style="display:none" onclick="deleteLead()">Delete</button>
+      <button class="btn btn-sm" onclick="closeModals()">Cancel</button>
+      <button class="btn btn-gold btn-sm" onclick="saveLead()">Save</button>
+    </div>
+  </div>
+</div>
+
+<!-- Project modal -->
+<div class="overlay" id="projectOverlay">
+  <div class="modal" style="max-width:540px">
+    <h2 id="pjTitle">New project</h2>
+    <input type="hidden" id="pjId">
+    <div class="f2">
+      <div class="field"><label>Project name</label><input id="pjName" placeholder="Warehouse mezzanine"></div>
+      <div class="field"><label>Client</label><input id="pjClient" placeholder="Al-Rajhi Construction"></div>
+    </div>
+    <div class="f2">
+      <div class="field"><label>Status</label>
+        <select id="pjStatus">
+          <option value="active">Active</option>
+          <option value="on_hold">On Hold</option>
+          <option value="completed">Completed</option>
+        </select>
+      </div>
+      <div class="field"><label>Note</label><input id="pjNote" placeholder="optional"></div>
+    </div>
+    <div class="modal-foot">
+      <button class="btn btn-danger btn-sm mfl" id="pjDel" style="display:none" onclick="deleteProject()">Delete</button>
+      <button class="btn btn-sm" onclick="closeModals()">Cancel</button>
+      <button class="btn btn-gold btn-sm" onclick="saveProject()">Save</button>
+    </div>
+  </div>
+</div>
+
+<!-- Project contacts modal -->
+<div class="overlay" id="projContactsOverlay">
+  <div class="modal" style="max-width:580px">
+    <h2 id="pcTitle">Project contacts</h2>
+    <p class="msub" id="pcSub" style="font-size:13px;color:var(--text3);margin-top:-12px;margin-bottom:18px"></p>
+    <div id="pcList"></div>
+    <div style="border-top:1px solid var(--border);padding-top:16px;margin-top:8px">
+      <div style="font-size:12px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--text3);margin-bottom:12px">Add contact to project</div>
+      <div class="f2">
+        <div class="field"><label>Contact</label><select id="pcContact"></select></div>
+        <div class="field"><label>Role on project</label><input id="pcRole" placeholder="Site Engineer"></div>
+      </div>
+      <button class="btn btn-gold btn-sm" onclick="addProjectContact()">+ Add</button>
+    </div>
+    <div class="modal-foot">
+      <button class="btn btn-sm" onclick="closeModals()">Close</button>
+    </div>
+  </div>
+</div>
+
+<div id="toasts"></div>
+<script>
+const SB_URL='https://spfztpokbpomqtiqgggz.supabase.co';
+const SB_KEY='sb_publishable_xPXU0xL_YaiWA6k9PWc0Xg_4QYeypNi';
+const sb=supabase.createClient(SB_URL,SB_KEY);
+
+const STAGES=[
+  {id:'new',       label:'New',         color:'#888888'},
+  {id:'contacted', label:'Contacted',   color:'#C8A96E'},
+  {id:'quoted',    label:'Quoted',      color:'#A8874E'},
+  {id:'in_progress',label:'In Progress',color:'#C8A96E'},
+  {id:'won',       label:'Won',         color:'#2D7D46'},
+  {id:'lost',      label:'Lost',        color:'#C0392B'},
+];
+const stg=id=>STAGES.find(s=>s.id===id)||STAGES[0];
+
+let contacts=[],leads=[],projects=[],projContacts=[],view='pipeline',curProjId=null;
+const $=id=>document.getElementById(id);
+const esc=s=>(s??'').toString().replaceAll('&','&amp;').replaceAll('<','&lt;').replaceAll('>','&gt;').replaceAll('"','&quot;').replaceAll("'",'&#39;');
+const fmtSAR=n=>'SAR '+Number(n||0).toLocaleString('en-US',{maximumFractionDigits:0});
+const fmtDate=d=>d?new Date(d).toLocaleDateString('en-GB',{day:'numeric',month:'short'}):'';
+const cById=id=>contacts.find(c=>c.id===id);
+
+function toggleTheme(){const n=document.documentElement.getAttribute('data-theme')==='dark'?'light':'dark';document.documentElement.setAttribute('data-theme',n);localStorage.setItem('apm_theme',n);}
+function toast(m,e){const t=document.createElement('div');t.className='toast'+(e?' err':'');t.textContent=m;$('toasts').appendChild(t);setTimeout(()=>t.remove(),3800);}
+
+async function loadAll(){
+  const[cR,lR,pR,pcR]=await Promise.all([
+    sb.from('crm_contacts').select('*').order('name'),
+    sb.from('crm_leads').select('*').order('created_at',{ascending:false}),
+    sb.from('crm_projects').select('*').order('created_at',{ascending:false}),
+    sb.from('crm_project_contacts').select('*'),
+  ]);
+  if(cR.error){$('vPipeline').innerHTML='<div class="loading">Could not load data. Run crm_update.sql in Supabase.</div>';toast(cR.error.message,1);return;}
+  contacts=cR.data;leads=lR.error?[]:lR.data;
+  projects=pR.error?[]:pR.data;projContacts=pcR.error?[]:pcR.data;
+  leads.forEach(l=>{if(l.stage==='negotiation')l.stage='in_progress';});
+  renderAll();
+}
+
+function renderAll(){renderStats();if(view==='pipeline')renderPipeline();else if(view==='leads')renderLeads();else if(view==='contacts')renderContacts();else renderProjects();}
+
+function renderStats(){
+  const open=leads.filter(l=>l.stage!=='won'&&l.stage!=='lost');
+  const now=new Date();
+  const won=leads.filter(l=>{if(l.stage!=='won')return false;const d=new Date(l.won_at||l.created_at);return d.getMonth()===now.getMonth()&&d.getFullYear()===now.getFullYear();});
+  $('stC').textContent=contacts.length;
+  $('stO').textContent=open.length;
+  $('stP').textContent=fmtSAR(open.reduce((s,l)=>s+Number(l.value||0),0));
+  $('stW').textContent=fmtSAR(won.reduce((s,l)=>s+Number(l.value||0),0));
+}
+
+function filt(list,fields){
+  const q=$('search').value.trim().toLowerCase();
+  if(!q)return list;
+  return list.filter(i=>fields.some(f=>{
+    let v=f==='_c'?(cById(i.contact_id)?.name||'')+' '+(cById(i.contact_id)?.company||''):i[f];
+    return(v||'').toString().toLowerCase().includes(q);
+  }));
+}
+
+function switchView(v){
+  view=v;
+  document.querySelectorAll('.ftab').forEach(t=>t.classList.toggle('active',t.dataset.v===v));
+  $('vPipeline').style.display=v==='pipeline'?'':'none';
+  $('vLeads').style.display=v==='leads'?'':'none';
+  $('vContacts').style.display=v==='contacts'?'':'none';
+  $('vProjects').style.display=v==='projects'?'':'none';
+  $('btnContact').style.display=v==='projects'?'none':'';
+  $('btnProject').style.display=v==='projects'?'':'none';
+  $('btnLead').style.display=v==='projects'?'none':'';
+  renderAll();
+}
+
+function renderPipeline(){
+  const list=filt(leads,['title','notes','_c']);
+  const cols=STAGES.map(s=>{
+    const items=list.filter(l=>l.stage===s.id);
+    const sum=items.reduce((t,l)=>t+Number(l.value||0),0);
+    const cards=items.map(l=>{
+      const c=cById(l.contact_id);
+      return `<div class="lead-card" draggable="true" data-id="${l.id}" ondragstart="dStart(event)" ondragend="dEnd(event)" onclick="openLeadModal('${l.id}')">
+        <h4>${esc(l.title)}</h4>
+        <div class="who">${esc(c?c.name+(c.company?' &middot; '+c.company:''):'&mdash;')}</div>
+        <div class="row"><span class="val">${fmtSAR(l.value)}</span><span class="dt">${fmtDate(l.expected_close)}</span></div>
+      </div>`;
+    }).join('');
+    return `<div class="col" data-stage="${s.id}" ondragover="dOver(event)" ondragleave="dLeave(event)" ondrop="dDrop(event)">
+      <div class="col-head"><span class="col-dot" style="background:${s.color}"></span><h3>${s.label}</h3><span class="cnt">${items.length}</span></div>
+      <div class="col-sum">${fmtSAR(sum)}</div>
+      <div class="col-body">${cards||'<div class="col-empty">Drop leads here</div>'}</div>
+    </div>`;
+  }).join('');
+  $('vPipeline').innerHTML=`<div class="board">${cols}</div>`;
+}
+
+function renderLeads(){
+  const list=filt(leads,['title','notes','source','_c']);
+  if(!list.length){$('vLeads').innerHTML='<div class="tbl-wrap"><div class="empty"><strong>No leads</strong>Add your first lead to start building the pipeline.</div></div>';return;}
+  const rows=list.map(l=>{
+    const c=cById(l.contact_id),s=stg(l.stage);
+    return `<tr class="rc" onclick="openLeadModal('${l.id}')">
+      <td><strong>${esc(l.title)}</strong></td>
+      <td>${esc(c?.name||'&mdash;')}<div class="dim">${esc(c?.company||'')}</div></td>
+      <td class="mono">${fmtSAR(l.value)}</td>
+      <td><span class="badge" style="color:${s.color};border-color:${s.color}44">${s.label}</span></td>
+      <td class="mono dim">${l.expected_close?fmtDate(new Date(l.expected_close)):'&mdash;'}</td>
+      <td class="dim">${esc(l.source||'&mdash;')}</td>
+    </tr>`;
+  }).join('');
+  $('vLeads').innerHTML=`<div class="tbl-wrap"><table><thead><tr><th>Lead</th><th>Contact</th><th>Value</th><th>Stage</th><th>Close</th><th>Source</th></tr></thead><tbody>${rows}</tbody></table></div>`;
+}
+
+function renderContacts(){
+  const list=filt(contacts,['name','company','city','phone','email','notes']);
+  if(!list.length){$('vContacts').innerHTML='<div class="tbl-wrap"><div class="empty"><strong>No contacts</strong>Add clients and procurement contacts here.</div></div>';return;}
+  const rows=list.map(c=>{
+    const open=leads.filter(l=>l.contact_id===c.id&&l.stage!=='won'&&l.stage!=='lost').length;
+    return `<tr class="rc" onclick="openContactModal('${c.id}')">
+      <td><strong>${esc(c.name)}</strong></td>
+      <td>${esc(c.company||'&mdash;')}</td>
+      <td class="dim">${esc(c.city||'&mdash;')}</td>
+      <td>${c.phone?`<a href="https://wa.me/${c.phone.replace(/\D/g,'')}" target="_blank" style="color:var(--gold-dk);text-decoration:none" onclick="event.stopPropagation()">WhatsApp</a>`:'&mdash;'}</td>
+      <td class="dim">${esc(c.email||'&mdash;')}</td>
+      <td class="mono dim">${open} open</td>
+    </tr>`;
+  }).join('');
+  $('vContacts').innerHTML=`<div class="tbl-wrap"><table><thead><tr><th>Name</th><th>Company</th><th>City</th><th>Phone</th><th>Email</th><th>Leads</th></tr></thead><tbody>${rows}</tbody></table></div>`;
+}
+
+/* drag and drop */
+let dragId=null;
+function dStart(e){dragId=e.currentTarget.dataset.id;e.currentTarget.classList.add('dragging');e.dataTransfer.effectAllowed='move';}
+function dEnd(e){e.currentTarget.classList.remove('dragging');document.querySelectorAll('.col.over').forEach(c=>c.classList.remove('over'));}
+function dOver(e){e.preventDefault();e.currentTarget.classList.add('over');}
+function dLeave(e){if(!e.currentTarget.contains(e.relatedTarget))e.currentTarget.classList.remove('over');}
+async function dDrop(e){
+  e.preventDefault();
+  const col=e.currentTarget;col.classList.remove('over');
+  const stage=col.dataset.stage;
+  const lead=leads.find(l=>l.id===dragId);
+  if(!lead||lead.stage===stage)return;
+  const old=lead.stage;lead.stage=stage;
+  if(stage==='won')lead.won_at=new Date().toISOString();
+  renderAll();
+  const p={stage};if(stage==='won')p.won_at=lead.won_at;
+  const{error}=await sb.from('crm_leads').update(p).eq('id',dragId);
+  if(error){lead.stage=old;renderAll();toast(error.message,1);}
+  else toast('Moved to '+stg(stage).label);
+  dragId=null;
+}
+
+/* contact modal */
+function openContactModal(id){
+  const c=id?contacts.find(x=>x.id===id):null;
+  $('cTitle').textContent=c?'Edit contact':'New contact';
+  $('cId').value=c?.id||'';
+  $('cName').value=c?.name||'';$('cCompany').value=c?.company||'';$('cCity').value=c?.city||'';
+  $('cPhone').value=c?.phone||'';$('cEmail').value=c?.email||'';$('cNotes').value=c?.notes||'';
+  $('cDel').style.display=c?'':'none';
+  $('contactOverlay').classList.add('open');$('cName').focus();
+}
+async function saveContact(){
+  const name=$('cName').value.trim();if(!name)return toast('Name required',1);
+  const rec={name,company:$('cCompany').value.trim()||null,city:$('cCity').value.trim()||null,phone:$('cPhone').value.trim()||null,email:$('cEmail').value.trim()||null,notes:$('cNotes').value.trim()||null};
+  const id=$('cId').value;
+  const{error}=await(id?sb.from('crm_contacts').update(rec).eq('id',id):sb.from('crm_contacts').insert(rec));
+  if(error)return toast(error.message,1);
+  closeModals();toast(id?'Contact updated':'Contact added');loadAll();
+}
+async function deleteContact(){
+  const id=$('cId').value;if(!id||!confirm('Delete this contact?'))return;
+  const{error}=await sb.from('crm_contacts').delete().eq('id',id);
+  if(error)return toast(error.message,1);
+  closeModals();toast('Deleted');loadAll();
+}
+
+/* lead modal */
+function openLeadModal(id){
+  const l=id?leads.find(x=>x.id===id):null;
+  $('lTitle').textContent=l?'Edit lead':'New lead';
+  $('lId').value=l?.id||'';
+  $('lContact').innerHTML='<option value="">&mdash; No contact &mdash;</option>'+contacts.map(c=>`<option value="${c.id}">${esc(c.name)}${c.company?' &middot; '+esc(c.company):''}</option>`).join('');
+  $('lContact').value=l?.contact_id||'';
+  $('lTitle2').value=l?.title||'';$('lValue').value=l?.value??'';$('lStage').value=l?.stage||'new';
+  $('lClose').value=l?.expected_close||'';$('lSource').value=l?.source||'';$('lNotes').value=l?.notes||'';
+  $('lDel').style.display=l?'':'none';
+  $('leadOverlay').classList.add('open');$('lTitle2').focus();
+}
+async function saveLead(){
+  const title=$('lTitle2').value.trim();if(!title)return toast('Title required',1);
+  const stage=$('lStage').value;
+  const rec={title,contact_id:$('lContact').value||null,value:Number($('lValue').value||0),stage,expected_close:$('lClose').value||null,source:$('lSource').value||null,notes:$('lNotes').value.trim()||null};
+  if(stage==='won'){const ex=leads.find(x=>x.id===$('lId').value);if(!ex||ex.stage!=='won')rec.won_at=new Date().toISOString();}
+  const id=$('lId').value;
+  const{error}=await(id?sb.from('crm_leads').update(rec).eq('id',id):sb.from('crm_leads').insert(rec));
+  if(error)return toast(error.message,1);
+  closeModals();toast(id?'Lead updated':'Lead added');loadAll();
+}
+async function deleteLead(){
+  const id=$('lId').value;if(!id||!confirm('Delete this lead?'))return;
+  const{error}=await sb.from('crm_leads').delete().eq('id',id);
+  if(error)return toast(error.message,1);
+  closeModals();toast('Deleted');loadAll();
+}
+
+
+
+/* -- Projects ------------------------------------------------------- */
+const STATUS_COLOR={active:'#2D7D46',on_hold:'#C8A96E',completed:'#888'};
+const STATUS_LABEL={active:'Active',on_hold:'On Hold',completed:'Completed'};
+
+function renderProjects(){
+  const q=$('search').value.trim().toLowerCase();
+  let list=projects.slice();
+  if(q)list=list.filter(p=>[p.name,p.client,p.note].some(v=>(v||'').toLowerCase().includes(q)));
+  if(!list.length){$('vProjects').innerHTML='<div class="tbl-wrap"><div class="empty"><strong>No projects yet</strong>Create a project and assign the contacts involved.</div></div>';return;}
+  const rows=list.map(p=>{
+    const pcs=projContacts.filter(pc=>pc.project_id===p.id);
+    const sc=STATUS_COLOR[p.status]||'#888';
+    const avatars=pcs.slice(0,4).map(pc=>{
+      const c=contacts.find(x=>x.id===pc.contact_id);
+      const ini=(c?.name||'?').split(' ').map(w=>w[0]).join('').slice(0,2).toUpperCase();
+      return `<span title="${esc(c?.name||'')}${pc.role?' ('+esc(pc.role)+')':''}" style="width:28px;height:28px;border-radius:50%;background:var(--gold);color:var(--black);font-size:11px;font-weight:700;display:inline-grid;place-items:center;border:2px solid var(--bg);margin-left:-6px;first:margin-left:0">${ini}</span>`;
+    }).join('');
+    return `<tr class="rc" onclick="openProjContacts('${p.id}')">
+      <td><strong>${esc(p.name)}</strong>${p.note?'<div class="dim">'+esc(p.note)+'</div>':''}</td>
+      <td class="dim">${esc(p.client||'&mdash;')}</td>
+      <td><span class="badge" style="color:${sc};border-color:${sc}44">${STATUS_LABEL[p.status]||p.status}</span></td>
+      <td><div style="display:flex;align-items:center;padding-left:6px">${avatars}${pcs.length?'<span class="dim" style="margin-left:10px;font-size:12px">'+pcs.length+' contact'+(pcs.length>1?'s':'')+'</span>':'<span class="dim" style="font-size:12px">None yet</span>'}</div></td>
+      <td><div style="display:flex;gap:4px;justify-content:flex-end">
+        <button class="btn btn-sm" style="padding:4px 9px;font-size:12px" onclick="event.stopPropagation();openProjectModal('${p.id}')">Edit</button>
+      </div></td>
+    </tr>`;
+  }).join('');
+  $('vProjects').innerHTML=`<div class="tbl-wrap"><table><thead><tr><th>Project</th><th>Client</th><th>Status</th><th>Contacts</th><th></th></tr></thead><tbody>${rows}</tbody></table></div>`;
+}
+
+function openProjectModal(id){
+  const p=id?projects.find(x=>x.id===id):null;
+  $('pjTitle').textContent=p?'Edit project':'New project';
+  $('pjId').value=p?.id||'';
+  $('pjName').value=p?.name||'';$('pjClient').value=p?.client||'';
+  $('pjStatus').value=p?.status||'active';$('pjNote').value=p?.note||'';
+  $('pjDel').style.display=p?'':'none';
+  $('projectOverlay').classList.add('open');$('pjName').focus();
+}
+async function saveProject(){
+  const name=$('pjName').value.trim();if(!name)return toast('Name required',1);
+  const rec={name,client:$('pjClient').value.trim()||null,status:$('pjStatus').value,note:$('pjNote').value.trim()||null};
+  const id=$('pjId').value;
+  const{error}=await(id?sb.from('crm_projects').update(rec).eq('id',id):sb.from('crm_projects').insert(rec));
+  if(error)return toast(error.message,1);
+  closeModals();toast(id?'Project updated':'Project created');loadAll();
+}
+async function deleteProject(){
+  const id=$('pjId').value;if(!id||!confirm('Delete this project?'))return;
+  const{error}=await sb.from('crm_projects').delete().eq('id',id);
+  if(error)return toast(error.message,1);
+  closeModals();toast('Deleted');loadAll();
+}
+
+function openProjContacts(id){
+  curProjId=id;
+  const p=projects.find(x=>x.id===id);if(!p)return;
+  $('pcTitle').textContent=esc(p.name);
+  $('pcSub').textContent=(p.client||'')+(p.client?' &mdash; ':'')+( STATUS_LABEL[p.status]||p.status);
+  $('pcContact').innerHTML=contacts.map(c=>`<option value="${c.id}">${esc(c.name)}${c.company?' - '+esc(c.company):''}</option>`).join('');
+  $('pcRole').value='';
+  renderProjContactList();
+  $('projContactsOverlay').classList.add('open');
+}
+function renderProjContactList(){
+  const pcs=projContacts.filter(pc=>pc.project_id===curProjId);
+  if(!pcs.length){$('pcList').innerHTML='<div class="empty" style="padding:20px"><strong>No contacts yet</strong>Add people involved in this project.</div>';return;}
+  $('pcList').innerHTML='<div class="tbl-wrap" style="margin-bottom:16px"><table><thead><tr><th>Name</th><th>Company</th><th>Role</th><th>Phone</th><th></th></tr></thead><tbody>'+
+    pcs.map(pc=>{
+      const c=contacts.find(x=>x.id===pc.contact_id);
+      return `<tr>
+        <td><strong>${esc(c?.name||'&mdash;')}</strong></td>
+        <td class="dim">${esc(c?.company||'&mdash;')}</td>
+        <td>${pc.role?'<span class="badge" style="color:#A8874E;border-color:#A8874E44">'+esc(pc.role)+'</span>':'<span class="dim">&mdash;</span>'}</td>
+        <td>${c?.phone?`<a href="https://wa.me/${(c.phone||'').replace(/\D/g,'')}" target="_blank" style="color:var(--gold-dk);text-decoration:none">WhatsApp</a>`:'&mdash;'}</td>
+        <td><button class="btn btn-sm" style="padding:3px 8px;font-size:11.5px;color:#C0392B;border-color:#C0392B44" onclick="removeProjContact('${pc.id}')">Remove</button></td>
+      </tr>`;
+    }).join('')+
+  '</tbody></table></div>';
+}
+async function addProjectContact(){
+  const cid=$('pcContact').value;if(!cid)return toast('Pick a contact',1);
+  const already=projContacts.some(pc=>pc.project_id===curProjId&&pc.contact_id===cid);
+  if(already)return toast('Already on this project',1);
+  const rec={project_id:curProjId,contact_id:cid,role:$('pcRole').value.trim()||null};
+  const{data,error}=await sb.from('crm_project_contacts').insert(rec).select();
+  if(error)return toast(error.message,1);
+  if(data)projContacts.push(...data);
+  $('pcRole').value='';
+  renderProjContactList();renderProjects();toast('Contact added');
+}
+async function removeProjContact(id){
+  const{error}=await sb.from('crm_project_contacts').delete().eq('id',id);
+  if(error)return toast(error.message,1);
+  projContacts=projContacts.filter(pc=>pc.id!==id);
+  renderProjContactList();renderProjects();
+}
+// Enter key in modals
+document.getElementById('cName').addEventListener('keydown',function(e){if(e.key==='Enter')saveContact();});
+document.getElementById('lTitle2').addEventListener('keydown',function(e){if(e.key==='Enter')saveLead();});
+function closeModals(){document.querySelectorAll('.overlay').forEach(o=>o.classList.remove('open'));}
+document.querySelectorAll('.overlay').forEach(o=>o.addEventListener('click',e=>{if(e.target===o)closeModals();}));
+document.addEventListener('keydown',e=>{if(e.key==='Escape')closeModals();});
+loadAll();
+</script>
+</body>
+</html>
