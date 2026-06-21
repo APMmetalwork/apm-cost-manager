@@ -1,0 +1,861 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Invoicing -- APM Metal Works</title>
+<script>
+(function(){
+  var K='apm_auth',T=10*60*60*1000;
+  try{var s=JSON.parse(sessionStorage.getItem(K));if(!s||Date.now()-s.ts>T)throw 0;}
+  catch(e){window.location.href='login.html';return;}
+  document.addEventListener('DOMContentLoaded',function(){
+    document.body.style.display='none';
+    var gate=document.createElement('div');gate.id='mod-gate';
+    gate.innerHTML='<style>'
+      +'#mod-gate{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;'
+      +'background:var(--bg,#fff);z-index:9999;font-family:inherit}'
+      +'#mod-gate .gc{width:100%;max-width:360px;padding:24px;border:1px solid var(--border,#d8d8d8);'
+      +'border-radius:10px;box-shadow:0 4px 20px rgba(0,0,0,.08)}'
+      +'#mod-gate h2{font-size:17px;font-weight:700;margin-bottom:4px}'
+      +'#mod-gate p{font-size:13px;color:var(--text3,#888);margin-bottom:20px}'
+      +'#mod-gate label{display:block;font-size:11px;font-weight:600;letter-spacing:.08em;'
+      +'text-transform:uppercase;color:var(--text3,#888);margin-bottom:7px}'
+      +'#mod-gate input{width:100%;padding:11px 13px;border:1px solid var(--border,#d8d8d8);'
+      +'border-radius:6px;background:var(--bg1,#f5f5f5);color:var(--text,#0a0a0a);'
+      +'font-size:14px;font-family:inherit;box-sizing:border-box}'
+      +'#mod-gate input:focus{outline:none;border-color:#C8A96E}'
+      +'#mod-gate input.err{border-color:#C0392B}'
+      +'#mod-gate .errmsg{display:none;color:#C0392B;font-size:12.5px;margin-top:8px}'
+      +'#mod-gate .errmsg.show{display:block}'
+      +'#mod-gate button{width:100%;margin-top:14px;padding:11px;background:#C8A96E;'
+      +'border:none;border-radius:6px;color:#0a0a0a;font-size:14px;font-weight:700;cursor:pointer}'
+      +'#mod-gate button:hover{background:#A8874E}'
+      +'#mod-gate button:disabled{opacity:.6;cursor:not-allowed}'
+      +'</style>'
+      +'<div class="gc"><h2>Invoicing</h2>'
+      +'<p>Enter the module password to continue.</p>'
+      +'<label>Password</label>'
+      +'<input id="mgpw" type="password" placeholder="Password" />'
+      +'<div class="errmsg" id="mgerr">Incorrect password.</div>'
+      +'<button id="mgbtn" onclick="mgCheck()">Open</button></div>';
+    document.body.parentNode.insertBefore(gate,document.body);
+    document.getElementById('mgpw').addEventListener('keydown',function(e){
+      if(e.key==='Enter'){e.preventDefault();mgCheck();}
+    });
+    document.getElementById('mgpw').addEventListener('input',function(){
+      document.getElementById('mgerr').classList.remove('show');
+      document.getElementById('mgpw').classList.remove('err');
+    });
+    setTimeout(function(){document.getElementById('mgpw').focus();},80);
+  });
+  window.mgCheck=function(){
+    var pw=document.getElementById('mgpw').value;
+    var btn=document.getElementById('mgbtn');
+    btn.disabled=true;btn.textContent='Checking...';
+    fetch('https://spfztpokbpomqtiqgggz.supabase.co/rest/v1/apm_settings?key=eq.mod_pass_invoicing&select=value',{
+      headers:{'apikey':'sb_publishable_xPXU0xL_YaiWA6k9PWc0Xg_4QYeypNi','Authorization':'Bearer sb_publishable_xPXU0xL_YaiWA6k9PWc0Xg_4QYeypNi'}
+    })
+    .then(function(r){return r.json();})
+    .then(function(d){
+      var correct=d&&d[0]&&d[0].value;
+      if(correct&&pw===correct){
+        document.getElementById('mod-gate').remove();
+        document.body.style.display='';
+      }else{
+        document.getElementById('mgerr').classList.add('show');
+        document.getElementById('mgpw').classList.add('err');
+        document.getElementById('mgpw').value='';
+        document.getElementById('mgpw').focus();
+        btn.disabled=false;btn.textContent='Open';
+      }
+    })
+    .catch(function(){
+      document.getElementById('mgerr').textContent='Could not connect. Check your internet.';
+      document.getElementById('mgerr').classList.add('show');
+      btn.disabled=false;btn.textContent='Open';
+    });
+  };
+})();
+(function(){var t=localStorage.getItem('apm_theme')||'light';document.documentElement.setAttribute('data-theme',t);})();
+</script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+:root{--gold:#C8A96E;--gold-dk:#A8874E;--black:#0A0A0A;--bg:#FFFFFF;--bg1:#F5F5F5;--bg2:#EBEBEB;--border:#D8D8D8;--text:#0A0A0A;--text2:#444444;--text3:#888888;--shadow:rgba(0,0,0,.07)}
+[data-theme="dark"]{--bg:#0A0A0A;--bg1:#141414;--bg2:#1E1E1E;--border:#2A2A2A;--text:#F0F0F0;--text2:#AAAAAA;--text3:#666666;--shadow:rgba(0,0,0,.35)}
+*,*::before,*::after{margin:0;padding:0;box-sizing:border-box}
+body{background:var(--bg);color:var(--text);font-family:'Inter',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;min-height:100vh;-webkit-font-smoothing:antialiased;transition:background .2s,color .2s}
+button{font-family:inherit;cursor:pointer}
+.topbar{display:flex;align-items:center;justify-content:space-between;padding:0 28px;height:56px;border-bottom:1px solid var(--border);background:var(--bg);position:sticky;top:0;z-index:40}
+.topbar-left{display:flex;align-items:center;gap:16px}
+.brand-link{display:flex;align-items:center;gap:10px;text-decoration:none;color:var(--text)}
+.brand-mark{width:30px;height:30px;border-radius:6px;background:var(--gold);display:grid;place-items:center;font-size:13px;font-weight:800;color:var(--black);flex:none}
+.brand-name{font-size:14px;font-weight:700;letter-spacing:-.01em}
+.page-label{font-size:13.5px;color:var(--text3);padding-left:16px;border-left:1px solid var(--border)}
+.topbar-right{display:flex;align-items:center;gap:10px}
+.theme-btn{width:32px;height:32px;border-radius:6px;background:transparent;border:1px solid var(--border);color:var(--text2);display:grid;place-items:center;transition:border-color .15s}
+.theme-btn:hover{border-color:var(--gold)}
+.btn{display:inline-flex;align-items:center;gap:6px;padding:8px 16px;border-radius:6px;font-size:13.5px;font-weight:600;border:1px solid var(--border);background:var(--bg1);color:var(--text);cursor:pointer;transition:border-color .15s,background .15s}
+.btn:hover{border-color:var(--gold)}.btn-gold{background:var(--gold);border-color:var(--gold);color:var(--black)}.btn-gold:hover{background:var(--gold-dk);border-color:var(--gold-dk)}
+.btn-danger{color:#C0392B;border-color:#C0392B33}.btn-danger:hover{border-color:#C0392B}
+.btn-sm{padding:6px 12px;font-size:12.5px}.btn:disabled{opacity:.45;cursor:not-allowed}
+.wrap{max-width:1200px;margin:0 auto;padding:28px}
+.stats-row{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));background:var(--border);border:1px solid var(--border);border-radius:8px;overflow:hidden;margin-bottom:24px}
+.stat-cell{background:var(--bg);padding:18px 22px;border-right:1px solid var(--border)}.stat-cell:last-child{border-right:none}
+.stat-lbl{font-size:11px;font-weight:600;letter-spacing:.1em;text-transform:uppercase;color:var(--text3);margin-bottom:6px}
+.stat-val{font-size:22px;font-weight:700;font-variant-numeric:tabular-nums}.stat-val.gold{color:var(--gold-dk)}.stat-val.red{color:#C0392B}
+.toolbar{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:18px}
+.search-input{padding:8px 12px;border:1px solid var(--border);border-radius:6px;background:var(--bg1);color:var(--text);font-size:13.5px;min-width:220px;flex:1;max-width:320px}
+.search-input:focus{outline:none;border-color:var(--gold)}
+.filter-tabs{display:flex;gap:2px;background:var(--bg1);border:1px solid var(--border);border-radius:6px;padding:3px}
+.ftab{background:transparent;border:none;color:var(--text3);padding:6px 14px;border-radius:4px;font-size:13px;font-weight:500;cursor:pointer}
+.ftab.active{background:var(--bg);color:var(--text);font-weight:600;box-shadow:0 1px 3px var(--shadow)}
+.tbl-wrap{border:1px solid var(--border);border-radius:8px;overflow:hidden}
+table{width:100%;border-collapse:collapse;font-size:13.5px}
+thead th{background:var(--bg1);padding:11px 16px;text-align:left;font-size:11px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--text3);border-bottom:1px solid var(--border);white-space:nowrap}
+tbody td{padding:13px 16px;border-bottom:1px solid var(--border);vertical-align:middle}
+tbody tr:last-child td{border-bottom:none}
+tbody tr.rc{cursor:pointer}tbody tr.rc:hover{background:var(--bg1)}
+.mono{font-variant-numeric:tabular-nums;font-size:13px}.dim{color:var(--text3);font-size:12.5px}
+.badge{display:inline-block;padding:3px 9px;border-radius:4px;font-size:11.5px;font-weight:600;border:1px solid}
+.empty{padding:52px 20px;text-align:center;color:var(--text3);font-size:14px}
+.empty strong{display:block;color:var(--text);margin-bottom:4px}
+.progbar{height:4px;background:var(--bg2);border-radius:2px;min-width:80px;overflow:hidden}
+.progbar span{display:block;height:100%;background:var(--gold)}
+.overlay{position:fixed;inset:0;background:rgba(0,0,0,.45);display:none;align-items:flex-start;justify-content:center;z-index:60;padding:5vh 16px;overflow-y:auto}
+.overlay.open{display:flex}
+.modal{background:var(--bg);border:1px solid var(--border);border-radius:10px;width:100%;max-width:500px;padding:28px;box-shadow:0 8px 32px var(--shadow)}
+.modal h2{font-size:17px;font-weight:700;margin-bottom:4px}.modal .msub{font-size:13px;color:var(--text3);margin-bottom:20px}
+.field{margin-bottom:14px}.field label{display:block;font-size:11.5px;font-weight:600;letter-spacing:.07em;text-transform:uppercase;color:var(--text3);margin-bottom:6px}
+.field input,.field select{width:100%;background:var(--bg1);border:1px solid var(--border);border-radius:6px;color:var(--text);padding:9px 11px;font-size:14px}
+.field input:focus,.field select:focus{outline:none;border-color:var(--gold)}.field input:disabled{opacity:.6}
+.f2{display:grid;grid-template-columns:1fr 1fr;gap:12px}@media(max-width:520px){.f2{grid-template-columns:1fr}}
+.sum-box{background:var(--bg1);border:1px solid var(--border);border-radius:8px;padding:14px 16px;margin-bottom:16px}
+.sum-row{display:flex;justify-content:space-between;padding:4px 0;font-size:13.5px}
+.sum-row.tot{border-top:1px solid var(--border);margin-top:6px;padding-top:10px;font-weight:700;font-size:15px}
+.sum-row .sv{font-variant-numeric:tabular-nums}
+.pay-log{margin-top:8px}
+.pay-row{display:flex;justify-content:space-between;align-items:center;padding:9px 0;border-bottom:1px solid var(--border);font-size:13px}
+.pay-row:last-child{border-bottom:none}
+.pay-row .rm{color:var(--text3);cursor:pointer;font-size:12px;padding:2px 6px}
+.pay-row .rm:hover{color:#C0392B}
+.modal-foot{display:flex;gap:10px;justify-content:flex-end;margin-top:20px;border-top:1px solid var(--border);padding-top:20px}
+.mfl{margin-right:auto}
+#toasts{position:fixed;bottom:20px;right:20px;display:flex;flex-direction:column;gap:8px;z-index:90}
+.toast{background:var(--bg);border:1px solid var(--border);border-left:3px solid var(--gold);border-radius:7px;padding:11px 16px;font-size:13.5px;min-width:220px;box-shadow:0 4px 16px var(--shadow);animation:tin .2s ease}
+.toast.err{border-left-color:#C0392B}
+@keyframes tin{from{transform:translateX(12px);opacity:0}}
+.loading{padding:60px;text-align:center;color:var(--text3)}
+</style>
+</head>
+<body>
+<header class="topbar">
+  <div class="topbar-left">
+    <a class="brand-link" href="dashboard.html"><div class="brand-mark">AP</div><span class="brand-name">APM Metal Works</span></a>
+    <span class="page-label">Invoicing</span>
+  </div>
+  <div class="topbar-right">
+    <button class="theme-btn" onclick="toggleTheme()"><svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="8" cy="8" r="3"/><path d="M8 1v1.5M8 13.5V15M1 8h1.5M13.5 8H15M3.05 3.05l1.06 1.06M11.89 11.89l1.06 1.06M3.05 12.95l1.06-1.06M11.89 4.11l1.06-1.06"/></svg></button>
+    <button class="btn btn-sm" id="btnFromQuote" onclick="openFromQuote()">+ From quote</button>
+    <button class="btn btn-gold btn-sm" id="btnNewInv" onclick="openInvModal()">+ New invoice</button>
+    <button class="btn btn-gold btn-sm" id="btnNewBill" style="display:none" onclick="openBillModal()">+ New supplier bill</button>
+    <button class="btn btn-gold btn-sm" id="btnNewCN" style="display:none" onclick="openCNModal()">+ New credit note</button>
+  </div>
+</header>
+
+<div class="wrap">
+  <div class="stats-row">
+    <div class="stat-cell"><div class="stat-lbl">Total invoiced</div><div class="stat-val" id="stT">--</div></div>
+    <div class="stat-cell"><div class="stat-lbl">Collected</div><div class="stat-val gold" id="stP">--</div></div>
+    <div class="stat-cell"><div class="stat-lbl">Outstanding</div><div class="stat-val red" id="stD">--</div></div>
+    <div class="stat-cell"><div class="stat-lbl">Overdue</div><div class="stat-val red" id="stO">--</div></div>
+  </div>
+  <div class="tabs" style="display:flex;gap:2px;background:var(--bg1);border:1px solid var(--border);border-radius:6px;padding:3px;width:fit-content;margin-bottom:18px">
+    <button class="tab active" data-t="customer" onclick="switchTab('customer')" style="background:var(--bg);border:none;color:var(--text);padding:7px 20px;border-radius:4px;font-size:13.5px;font-weight:600;cursor:pointer">Customer invoices</button>
+    <button class="tab" data-t="supplier" onclick="switchTab('supplier')" style="background:transparent;border:none;color:var(--text3);padding:7px 20px;border-radius:4px;font-size:13.5px;font-weight:500;cursor:pointer">Supplier bills</button>
+    <button class="tab" data-t="credit" onclick="switchTab('credit')" style="background:transparent;border:none;color:var(--text3);padding:7px 20px;border-radius:4px;font-size:13.5px;font-weight:500;cursor:pointer">Credit notes</button>
+    <button class="tab" data-t="aging" onclick="switchTab('aging')" style="background:transparent;border:none;color:var(--text3);padding:7px 20px;border-radius:4px;font-size:13.5px;font-weight:500;cursor:pointer">Aging report</button>
+    <button class="tab" data-t="aging" onclick="switchTab('aging')" style="background:transparent;border:none;color:var(--text3);padding:7px 20px;border-radius:4px;font-size:13.5px;font-weight:500;cursor:pointer">Aging report</button>
+  </div>
+  <div class="toolbar">
+    <input class="search-input" id="search" placeholder="Search invoice, client, project..." oninput="renderList()">
+    <div class="filter-tabs">
+      <button class="ftab active" data-f="all" onclick="setF('all')">All</button>
+      <button class="ftab" data-f="unpaid" onclick="setF('unpaid')">Unpaid</button>
+      <button class="ftab" data-f="partial" onclick="setF('partial')">Partial</button>
+      <button class="ftab" data-f="paid" onclick="setF('paid')">Paid</button>
+      <button class="ftab" data-f="overdue" onclick="setF('overdue')">Overdue</button>
+    </div>
+  </div>
+  <div id="listBody"><div class="loading">Loading...</div></div>
+</div>
+
+<!-- pick quote -->
+<div class="overlay" id="qPickOverlay">
+  <div class="modal">
+    <h2>Generate from quote</h2>
+    <p class="msub">Select an accepted quote to pre-fill the invoice.</p>
+    <div id="qPicker"><div class="loading">Loading...</div></div>
+    <div class="modal-foot"><button class="btn btn-sm" onclick="closeModals()">Cancel</button></div>
+  </div>
+</div>
+
+<!-- create/edit invoice -->
+<div class="overlay" id="invOverlay">
+  <div class="modal">
+    <h2 id="iTitle">New invoice</h2>
+    <input type="hidden" id="iId"><input type="hidden" id="iPayData"><input type="hidden" id="iQuoteId">
+    <div class="f2">
+      <div class="field"><label>Invoice number</label><input id="iNo" disabled></div>
+      <div class="field"><label>Issue date</label><input id="iDate" type="date"></div>
+    </div>
+    <div class="f2">
+      <div class="field"><label>Client</label><input id="iClient" placeholder="Al-Rajhi Construction"></div>
+      <div class="field"><label>Due date</label><input id="iDue" type="date"></div>
+    </div>
+    <div class="field"><label>Project</label><input id="iProject" placeholder="Warehouse mezzanine"></div>
+    <div class="f2">
+      <div class="field"><label>Subtotal (SAR)</label><input id="iSub" type="number" min="0" step="any" oninput="recalcInv()"></div>
+      <div class="field"><label>VAT (15%)</label><input id="iVat" disabled></div>
+    </div>
+    <div class="sum-box">
+      <div class="sum-row"><span>Total</span><span class="sv" id="iTotal">SAR 0.00</span></div>
+      <div class="sum-row"><span>Paid</span><span class="sv" id="iPaid">SAR 0.00</span></div>
+      <div class="sum-row tot"><span>Balance due</span><span class="sv" id="iBal">SAR 0.00</span></div>
+    </div>
+    <div class="modal-foot">
+      <button class="btn btn-danger btn-sm mfl" id="iDel" style="display:none" onclick="deleteInvoice()">Delete</button>
+      <button class="btn btn-sm" onclick="closeModals()">Cancel</button>
+      <button class="btn btn-gold btn-sm" onclick="saveInvoice()">Save invoice</button>
+    </div>
+  </div>
+</div>
+
+<!-- payments -->
+<div class="overlay" id="payOverlay">
+  <div class="modal">
+    <h2 id="pTitle">Invoice</h2>
+    <p class="msub" id="pSub"></p>
+    <div class="sum-box">
+      <div class="sum-row"><span>Total</span><span class="sv" id="pTot">--</span></div>
+      <div class="sum-row"><span>Paid</span><span class="sv" id="pPd">--</span></div>
+      <div class="sum-row tot"><span>Balance due</span><span class="sv" id="pBal">--</span></div>
+    </div>
+    <div style="font-size:12px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--text3);margin-bottom:10px">Record payment</div>
+    <div class="f2">
+      <div class="field"><label>Amount (SAR)</label><input id="pyAmt" type="number" min="0" step="any" placeholder="0"></div>
+      <div class="field"><label>Date</label><input id="pyDate" type="date"></div>
+    </div>
+    <div class="f2">
+      <div class="field"><label>Method</label><select id="pyMethod"><option>Bank transfer</option><option>Cash</option><option>Cheque</option><option>Card</option></select></div>
+      <div class="field"><label>Reference</label><input id="pyRef" placeholder="optional"></div>
+    </div>
+    <button class="btn btn-gold btn-sm" onclick="addPayment()">+ Add payment</button>
+    <div class="pay-log" id="payLog"></div>
+    <div class="modal-foot">
+      <button class="btn btn-sm" onclick="printInvoice()">Print / PDF</button>
+      <button class="btn btn-sm" onclick="closeModals()">Close</button>
+    </div>
+  </div>
+</div>
+
+<!-- create/edit supplier bill -->
+<div class="overlay" id="billOverlay">
+  <div class="modal">
+    <h2 id="bTitle">New supplier bill</h2>
+    <input type="hidden" id="bId"><input type="hidden" id="bPayData">
+    <div class="f2">
+      <div class="field"><label>Supplier</label><input id="bSupplier" placeholder="Gulf Steel Trading"></div>
+      <div class="field"><label>Supplier bill no.</label><input id="bNo" placeholder="their invoice #"></div>
+    </div>
+    <div class="f2">
+      <div class="field"><label>Category</label><select id="bCat"><option>Material</option><option>Subcontract</option><option>Equipment</option><option>Service</option><option>Other</option></select></div>
+      <div class="field"><label>Project</label><input id="bProject" placeholder="optional"></div>
+    </div>
+    <div class="f2">
+      <div class="field"><label>Issue date</label><input id="bDate" type="date"></div>
+      <div class="field"><label>Due date</label><input id="bDue" type="date"></div>
+    </div>
+    <div class="f2">
+      <div class="field"><label>Subtotal (SAR)</label><input id="bSub" type="number" min="0" step="any" oninput="recalcBill()"></div>
+      <div class="field"><label>VAT (15%)</label><input id="bVat" disabled></div>
+    </div>
+    <div class="sum-box">
+      <div class="sum-row"><span>Total</span><span class="sv" id="bTotal">SAR 0.00</span></div>
+      <div class="sum-row"><span>Paid</span><span class="sv" id="bPaid">SAR 0.00</span></div>
+      <div class="sum-row tot"><span>Balance owed</span><span class="sv" id="bBal">SAR 0.00</span></div>
+    </div>
+    <div class="field" style="margin-top:14px"><label>Note</label><input id="bNote" placeholder="optional"></div>
+    <div class="modal-foot">
+      <button class="btn btn-danger btn-sm mfl" id="bDel" style="display:none" onclick="deleteBill()">Delete</button>
+      <button class="btn btn-sm" onclick="closeModals()">Cancel</button>
+      <button class="btn btn-gold btn-sm" onclick="saveBill()">Save bill</button>
+    </div>
+  </div>
+</div>
+
+<!-- supplier bill payments -->
+<div class="overlay" id="billPayOverlay">
+  <div class="modal">
+    <h2 id="bpTitle">Supplier bill</h2>
+    <p class="msub" id="bpSub"></p>
+    <div class="sum-box">
+      <div class="sum-row"><span>Total</span><span class="sv" id="bpTot">--</span></div>
+      <div class="sum-row"><span>Paid</span><span class="sv" id="bpPd">--</span></div>
+      <div class="sum-row tot"><span>Balance owed</span><span class="sv" id="bpBal">--</span></div>
+    </div>
+    <div style="font-size:12px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--text3);margin-bottom:10px">Record payment to supplier</div>
+    <div class="f2">
+      <div class="field"><label>Amount (SAR)</label><input id="bpyAmt" type="number" min="0" step="any" placeholder="0"></div>
+      <div class="field"><label>Date</label><input id="bpyDate" type="date"></div>
+    </div>
+    <div class="f2">
+      <div class="field"><label>Method</label><select id="bpyMethod"><option>Bank transfer</option><option>Cash</option><option>Cheque</option><option>Card</option></select></div>
+      <div class="field"><label>Reference</label><input id="bpyRef" placeholder="optional"></div>
+    </div>
+    <button class="btn btn-gold btn-sm" onclick="addBillPayment()">+ Add payment</button>
+    <div class="pay-log" id="billPayLog"></div>
+    <div class="modal-foot">
+      <button class="btn btn-sm" onclick="closeModals()">Close</button>
+    </div>
+  </div>
+</div>
+
+<div id="toasts"></div>
+<script>
+const SB_URL='https://spfztpokbpomqtiqgggz.supabase.co';
+const SB_KEY='sb_publishable_xPXU0xL_YaiWA6k9PWc0Xg_4QYeypNi';
+const sb=supabase.createClient(SB_URL,SB_KEY);
+let invoices=[],quotes=[],bills=[],creditNotes=[],sfilt='all',payTarget=null,billPayTarget=null,activeTab='customer';
+const $=id=>document.getElementById(id);
+const esc=s=>(s??'').toString().replaceAll('&','&amp;').replaceAll('<','&lt;').replaceAll('>','&gt;').replaceAll('"','&quot;').replaceAll("'",'&#39;');
+const fmtSAR=n=>'SAR '+Number(n||0).toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2});
+const fmtSAR0=n=>'SAR '+Number(n||0).toLocaleString('en-US',{maximumFractionDigits:0});
+const fmtDate=d=>d?new Date(d).toLocaleDateString('en-GB',{day:'numeric',month:'short',year:'numeric'}):'--';
+const today=()=>new Date().toISOString().slice(0,10);
+const paidOf=i=>(i.payments||[]).reduce((s,p)=>s+Number(p.amount||0),0);
+const balOf=i=>Number(i.total||0)-paidOf(i);
+function statusOf(i){const bal=balOf(i),paid=paidOf(i);if(bal<=0.001)return'paid';if(paid>0.001)return'partial';if(i.due_date&&new Date(i.due_date)<new Date(today()))return'overdue';return'unpaid';}
+const ST={paid:{label:'Paid',color:'#2D7D46'},partial:{label:'Partial',color:'#C8A96E'},unpaid:{label:'Unpaid',color:'#888888'},overdue:{label:'Overdue',color:'#C0392B'}};
+
+function toggleTheme(){const n=document.documentElement.getAttribute('data-theme')==='dark'?'light':'dark';document.documentElement.setAttribute('data-theme',n);localStorage.setItem('apm_theme',n);}
+function toast(m,e){const t=document.createElement('div');t.className='toast'+(e?' err':'');t.textContent=m;$('toasts').appendChild(t);setTimeout(()=>t.remove(),3800);}
+
+async function loadAll(){
+  const[iR,qR,bR]=await Promise.all([
+    sb.from('invoices').select('*').order('created_at',{ascending:false}),
+    sb.from('quotes').select('*').eq('status','accepted').order('created_at',{ascending:false}),
+    sb.from('supplier_invoices').select('*').order('created_at',{ascending:false}),
+  ]);
+  if(iR.error){$('listBody').innerHTML='<div class="tbl-wrap"><div class="empty"><strong>Could not load</strong>Run erp_setup_all.sql and fix_permissions.sql in Supabase.</div></div>';toast(iR.error.message,1);return;}
+  const cnR=await sb.from('apm_credit_notes').select('*').order('created_at',{ascending:false});
+  invoices=iR.data;quotes=qR.error?[]:qR.data;bills=bR.error?[]:bR.data;creditNotes=cnR.error?[]:cnR.data;
+  renderStats();renderList();
+}
+function switchTab(t){
+  activeTab=t;
+  document.querySelectorAll('.tabs .tab').forEach(b=>{
+    const on=b.dataset.t===t;
+    b.classList.toggle('active',on);
+    b.style.background=on?'var(--bg)':'transparent';
+    b.style.color=on?'var(--text)':'var(--text3)';
+    b.style.fontWeight=on?'600':'500';
+  });
+  $('btnFromQuote').style.display=t==='customer'?'':'none';
+  $('btnNewInv').style.display=t==='customer'?'':'none';
+  $('btnNewBill').style.display=t==='supplier'?'':'none';
+  $('btnNewCN').style.display=t==='credit'?'':'none';
+  $('search').placeholder=t==='customer'?'Search invoice, client, project...':t==='supplier'?'Search supplier, bill no, project...':t==='credit'?'Search credit note, client...':'';
+  $('search').style.display=t==='aging'?'none':'';
+  document.querySelector('.filter-tabs').style.display=t==='aging'?'none':'';
+  sfilt='all';document.querySelectorAll('.ftab').forEach(b=>b.classList.toggle('active',b.dataset.f==='all'));
+  renderStats();renderList();
+}
+function renderStats(){
+  if(activeTab==='supplier'){
+    const tot=bills.reduce((s,b)=>s+Number(b.total||0),0);
+    const paid=bills.reduce((s,b)=>s+paidOf(b),0);
+    const overdue=bills.filter(b=>statusOf(b)==='overdue').reduce((s,b)=>s+balOf(b),0);
+    document.querySelectorAll('.stat-lbl')[0].textContent='Total bills';
+    document.querySelectorAll('.stat-lbl')[1].textContent='Paid out';
+    document.querySelectorAll('.stat-lbl')[2].textContent='Owed';
+    document.querySelectorAll('.stat-lbl')[3].textContent='Overdue';
+    $('stT').textContent=fmtSAR0(tot);$('stP').textContent=fmtSAR0(paid);$('stD').textContent=fmtSAR0(tot-paid);$('stO').textContent=fmtSAR0(overdue);
+    return;
+  }
+  document.querySelectorAll('.stat-lbl')[0].textContent='Total invoiced';
+  document.querySelectorAll('.stat-lbl')[1].textContent='Collected';
+  document.querySelectorAll('.stat-lbl')[2].textContent='Outstanding';
+  document.querySelectorAll('.stat-lbl')[3].textContent='Overdue';
+  const tot=invoices.reduce((s,i)=>s+Number(i.total||0),0);
+  const paid=invoices.reduce((s,i)=>s+paidOf(i),0);
+  const overdue=invoices.filter(i=>statusOf(i)==='overdue').reduce((s,i)=>s+balOf(i),0);
+  $('stT').textContent=fmtSAR0(tot);$('stP').textContent=fmtSAR0(paid);$('stD').textContent=fmtSAR0(tot-paid);$('stO').textContent=fmtSAR0(overdue);
+}
+function setF(f){sfilt=f;document.querySelectorAll('.ftab').forEach(t=>t.classList.toggle('active',t.dataset.f===f));renderList();}
+function renderList(){
+  if(activeTab==='supplier')return renderBills();
+  if(activeTab==='credit')return renderCreditNotes();
+  if(activeTab==='aging')return renderAging();
+  if(activeTab==='aging')return renderAging();
+  let list=invoices.slice();
+  if(sfilt!=='all')list=list.filter(i=>statusOf(i)===sfilt);
+  const term=$('search').value.trim().toLowerCase();
+  if(term)list=list.filter(i=>[i.invoice_no,i.client_name,i.project_name].some(v=>(v||'').toLowerCase().includes(term)));
+  if(!list.length){$('listBody').innerHTML='<div class="tbl-wrap"><div class="empty"><strong>No invoices</strong>Generate one from an accepted quote, or create a new invoice manually.</div></div>';return;}
+  const rows=list.map(i=>{const s=ST[statusOf(i)],pct=Number(i.total)?Math.min(100,Math.round(paidOf(i)/Number(i.total)*100)):0;return`<tr class="rc" onclick="openPayments('${i.id}')"><td class="mono">${esc(i.invoice_no)}</td><td><strong>${esc(i.client_name)}</strong><div class="dim">${esc(i.project_name||'')}</div></td><td class="mono dim">${fmtDate(i.due_date)}</td><td class="mono">${fmtSAR0(i.total)}</td><td><div style="display:flex;align-items:center;gap:8px"><div class="progbar"><span style="width:${pct}%"></span></div><span class="dim">${pct}%</span></div></td><td><span class="badge" style="color:${s.color};border-color:${s.color}44">${s.label}</span></td><td><div style="display:flex;gap:4px;justify-content:flex-end"><button class="btn btn-sm" style="padding:4px 9px;font-size:12px" onclick="event.stopPropagation();openInvModal('${i.id}')">Edit</button></div></td></tr>`;}).join('');
+  $('listBody').innerHTML=`<div class="tbl-wrap"><table><thead><tr><th>Invoice</th><th>Client / Project</th><th>Due</th><th>Total</th><th>Collected</th><th>Status</th><th></th></tr></thead><tbody>${rows}</tbody></table></div>`;
+}
+function nextNo(){const y=new Date().getFullYear(),p=`APM-INV-${y}-`;const nums=invoices.map(i=>i.invoice_no).filter(n=>n&&n.startsWith(p)).map(n=>parseInt(n.slice(p.length),10)).filter(n=>!isNaN(n));return p+String((nums.length?Math.max(...nums):0)+1).padStart(3,'0');}
+
+function openFromQuote(){
+  const avail=quotes.filter(q=>!invoices.some(i=>i.source_quote_id===q.id));
+  $('qPicker').innerHTML=avail.length
+    ?`<div class="tbl-wrap"><table><tbody>${avail.map(q=>`<tr class="rc" onclick="invFromQuote('${q.id}')"><td class="mono">${esc(q.quote_no)}</td><td><strong>${esc(q.client_name)}</strong><div class="dim">${esc(q.project_name)}</div></td><td class="mono">${fmtSAR0(q.total)}</td></tr>`).join('')}</tbody></table></div>`
+    :'<div class="empty"><strong>No accepted quotes to invoice</strong>Accept a quote in the Quotations module first.</div>';
+  $('qPickOverlay').classList.add('open');
+}
+function invFromQuote(qid){const q=quotes.find(x=>x.id===qid);if(!q)return;closeModals();openInvModal(null,{client:q.client_name,project:q.project_name,sub:q.subtotal,qid:q.id});}
+
+function openInvModal(id,seed){
+  const inv=id?invoices.find(x=>x.id===id):null;
+  $('iTitle').textContent=inv?'Edit invoice':'New invoice';
+  $('iId').value=inv?.id||'';$('iQuoteId').value=inv?.source_quote_id||seed?.qid||'';
+  $('iNo').value=inv?inv.invoice_no:nextNo();$('iDate').value=inv?.issue_date||today();
+  const due=new Date();due.setDate(due.getDate()+30);$('iDue').value=inv?.due_date||due.toISOString().slice(0,10);
+  $('iClient').value=inv?.client_name||seed?.client||'';$('iProject').value=inv?.project_name||seed?.project||'';
+  $('iSub').value=inv?Number(inv.subtotal):(seed?.sub??'');
+  $('iPayData').value=JSON.stringify(inv?.payments||[]);
+  $('iDel').style.display=inv?'':'none';
+  recalcInv();$('invOverlay').classList.add('open');
+}
+function recalcInv(){
+  const sub=Number($('iSub').value||0),vat=sub*0.15,tot=sub+vat;
+  const paid=(JSON.parse($('iPayData').value||'[]')).reduce((s,p)=>s+Number(p.amount||0),0);
+  $('iVat').value='SAR '+vat.toFixed(2);$('iTotal').textContent=fmtSAR(tot);$('iPaid').textContent=fmtSAR(paid);$('iBal').textContent=fmtSAR(tot-paid);
+}
+async function saveInvoice(){
+  const client=$('iClient').value.trim();if(!client)return toast('Client required',1);
+  const sub=Number($('iSub').value||0);if(sub<=0)return toast('Subtotal must be greater than 0',1);
+  const vat=sub*0.15;
+  const rec={invoice_no:$('iNo').value,client_name:client,project_name:$('iProject').value.trim()||null,issue_date:$('iDate').value||today(),due_date:$('iDue').value||null,subtotal:sub,vat,total:sub+vat,source_quote_id:$('iQuoteId').value||null,payments:JSON.parse($('iPayData').value||'[]')};
+  const id=$('iId').value;
+  const{error}=await(id?sb.from('invoices').update(rec).eq('id',id):sb.from('invoices').insert(rec));
+  if(error)return toast(error.message,1);
+  closeModals();toast(id?'Invoice updated':'Invoice created');loadAll();
+}
+async function deleteInvoice(){
+  const id=$('iId').value;if(!id||!confirm('Delete this invoice?'))return;
+  const{error}=await sb.from('invoices').delete().eq('id',id);
+  if(error)return toast(error.message,1);
+  closeModals();toast('Deleted');loadAll();
+}
+
+function openPayments(id){
+  payTarget=invoices.find(i=>i.id===id);if(!payTarget)return;
+  $('pTitle').textContent='Invoice '+payTarget.invoice_no;
+  $('pSub').textContent=(payTarget.client_name||'')+(payTarget.project_name?' -- '+payTarget.project_name:'');
+  $('pyDate').value=today();$('pyAmt').value='';$('pyRef').value='';
+  renderPayDetail();$('payOverlay').classList.add('open');
+}
+function renderPayDetail(){
+  const tot=Number(payTarget.total||0),paid=paidOf(payTarget);
+  $('pTot').textContent=fmtSAR(tot);$('pPd').textContent=fmtSAR(paid);$('pBal').textContent=fmtSAR(tot-paid);
+  const ps=payTarget.payments||[];
+  $('payLog').innerHTML=ps.length?ps.map((p,i)=>`<div class="pay-row"><span>${fmtDate(p.date)} &middot; ${esc(p.method||'')}${p.ref?' &middot; '+esc(p.ref):''}</span><span><strong class="mono">${fmtSAR(p.amount)}</strong> <span class="rm" onclick="removePayment(${i})">remove</span></span></div>`).join(''):'<div class="dim" style="padding:10px 0;font-size:13px">No payments recorded.</div>';
+}
+async function addPayment(){
+  const amt=Number($('pyAmt').value||0);if(amt<=0)return toast('Enter a payment amount',1);
+  const p={amount:amt,date:$('pyDate').value||today(),method:$('pyMethod').value,ref:$('pyRef').value.trim()||null};
+  const payments=[...(payTarget.payments||[]),p];
+  const{error}=await sb.from('invoices').update({payments}).eq('id',payTarget.id);
+  if(error)return toast(error.message,1);
+  payTarget.payments=payments;$('pyAmt').value='';$('pyRef').value='';
+  renderPayDetail();renderList();renderStats();
+  toast(balOf(payTarget)<=0.001?'Invoice fully paid':'Payment recorded');
+}
+async function removePayment(i){
+  const payments=(payTarget.payments||[]).slice();payments.splice(i,1);
+  const{error}=await sb.from('invoices').update({payments}).eq('id',payTarget.id);
+  if(error)return toast(error.message,1);
+  payTarget.payments=payments;renderPayDetail();renderList();renderStats();
+}
+
+function printInvoice(){
+  const inv=payTarget,paid=paidOf(inv),bal=Number(inv.total)-paid;
+  const w=window.open('','_blank');
+  w.document.write(`<!doctype html><html><head><meta charset="utf-8"><title>${esc(inv.invoice_no)}</title><style>body{font-family:Arial,sans-serif;color:#111;margin:48px;font-size:13px}h1{font-size:22px;margin:0}hr{border:none;border-top:2px solid #C8A96E;margin:16px 0}.hd{display:flex;justify-content:space-between;margin-bottom:20px}.sub{color:#666;font-size:11px;text-transform:uppercase;letter-spacing:.1em;margin-top:3px}.meta td{padding:3px 0}.meta td:first-child{color:#666;padding-right:24px;font-size:12px}.tot{margin-left:auto;width:300px;margin-top:24px}.tot td{padding:6px 0}.tot td:last-child{text-align:right;font-variant-numeric:tabular-nums}.grand td{border-top:2px solid #111;font-weight:700;font-size:15px;padding-top:8px}.bal td{color:#C0392B;font-weight:700}</style></head><body>
+  <div class="hd"><div><h1>APM Metal Works</h1><div class="sub">VAT Invoice &mdash; Riyadh, Saudi Arabia</div></div><div style="text-align:right"><div style="font-size:18px;font-weight:700">${esc(inv.invoice_no)}</div></div></div><hr>
+  <table class="meta"><tr><td>Bill to</td><td><strong>${esc(inv.client_name)}</strong></td><td style="padding-left:40px">Issued</td><td>${fmtDate(inv.issue_date)}</td></tr><tr><td>Project</td><td>${esc(inv.project_name||'&mdash;')}</td><td style="padding-left:40px">Due</td><td>${fmtDate(inv.due_date)}</td></tr></table>
+  <table class="tot"><tr><td>Subtotal</td><td>${fmtSAR(inv.subtotal)}</td></tr><tr><td>VAT (15%)</td><td>${fmtSAR(inv.vat)}</td></tr><tr class="grand"><td>Total</td><td>${fmtSAR(inv.total)}</td></tr><tr><td>Paid</td><td>${fmtSAR(paid)}</td></tr><tr class="bal"><td>Balance due</td><td>${fmtSAR(bal)}</td></tr></table>
+  </body></html>`);
+  w.document.close();setTimeout(()=>w.print(),350);
+}
+
+
+// -- Supplier bills ----------------------------------------------------
+const CAT_COLOR={Material:'#C8A96E',Subcontract:'#A8874E',Equipment:'#666',Service:'#888',Other:'#444'};
+function renderBills(){
+  let list=bills.slice();
+  if(sfilt!=='all')list=list.filter(b=>statusOf(b)===sfilt);
+  const term=$('search').value.trim().toLowerCase();
+  if(term)list=list.filter(b=>[b.bill_no,b.supplier_name,b.project_name].some(v=>(v||'').toLowerCase().includes(term)));
+  if(!list.length){$('listBody').innerHTML='<div class="tbl-wrap"><div class="empty"><strong>No supplier bills</strong>Record bills from steel suppliers, subcontractors and service providers.</div></div>';return;}
+  const rows=list.map(b=>{
+    const s=ST[statusOf(b)],pct=Number(b.total)?Math.min(100,Math.round(paidOf(b)/Number(b.total)*100)):0;
+    const cc=CAT_COLOR[b.category]||'#888';
+    return`<tr class="rc" onclick="openBillPayments('${b.id}')">
+      <td class="mono">${esc(b.bill_no||'--')}</td>
+      <td><strong>${esc(b.supplier_name)}</strong><div class="dim">${esc(b.project_name||'')}</div></td>
+      <td><span class="badge" style="color:${cc};border-color:${cc}44">${esc(b.category||'--')}</span></td>
+      <td class="mono dim">${fmtDate(b.due_date)}</td>
+      <td class="mono">${fmtSAR0(b.total)}</td>
+      <td><div style="display:flex;align-items:center;gap:8px"><div class="progbar"><span style="width:${pct}%"></span></div><span class="dim">${pct}%</span></div></td>
+      <td><span class="badge" style="color:${s.color};border-color:${s.color}44">${s.label}</span></td>
+      <td><div style="display:flex;gap:4px;justify-content:flex-end"><button class="btn btn-sm" style="padding:4px 9px;font-size:12px" onclick="event.stopPropagation();openBillModal('${b.id}')">Edit</button></div></td>
+    </tr>`;
+  }).join('');
+  $('listBody').innerHTML=`<div class="tbl-wrap"><table><thead><tr><th>Bill no.</th><th>Supplier / Project</th><th>Category</th><th>Due</th><th>Total</th><th>Paid</th><th>Status</th><th></th></tr></thead><tbody>${rows}</tbody></table></div>`;
+}
+function openBillModal(id){
+  const b=id?bills.find(x=>x.id===id):null;
+  $('bTitle').textContent=b?'Edit supplier bill':'New supplier bill';
+  $('bId').value=b?.id||'';
+  $('bSupplier').value=b?.supplier_name||'';$('bNo').value=b?.bill_no||'';
+  $('bCat').value=b?.category||'Material';$('bProject').value=b?.project_name||'';
+  $('bDate').value=b?.issue_date||today();
+  const due=new Date();due.setDate(due.getDate()+30);$('bDue').value=b?.due_date||due.toISOString().slice(0,10);
+  $('bSub').value=b?Number(b.subtotal):'';$('bNote').value=b?.note||'';
+  $('bPayData').value=JSON.stringify(b?.payments||[]);
+  $('bDel').style.display=b?'':'none';
+  recalcBill();$('billOverlay').classList.add('open');$('bSupplier').focus();
+}
+function recalcBill(){
+  const sub=Number($('bSub').value||0),vat=sub*0.15,tot=sub+vat;
+  const paid=(JSON.parse($('bPayData').value||'[]')).reduce((s,p)=>s+Number(p.amount||0),0);
+  $('bVat').value='SAR '+vat.toFixed(2);$('bTotal').textContent=fmtSAR(tot);$('bPaid').textContent=fmtSAR(paid);$('bBal').textContent=fmtSAR(tot-paid);
+}
+async function saveBill(){
+  const supplier=$('bSupplier').value.trim();if(!supplier)return toast('Supplier required',1);
+  const sub=Number($('bSub').value||0);if(sub<=0)return toast('Subtotal must be greater than 0',1);
+  const vat=sub*0.15;
+  const rec={supplier_name:supplier,bill_no:$('bNo').value.trim()||null,category:$('bCat').value,project_name:$('bProject').value.trim()||null,issue_date:$('bDate').value||today(),due_date:$('bDue').value||null,subtotal:sub,vat,total:sub+vat,note:$('bNote').value.trim()||null,payments:JSON.parse($('bPayData').value||'[]')};
+  const id=$('bId').value;
+  const{error}=await(id?sb.from('supplier_invoices').update(rec).eq('id',id):sb.from('supplier_invoices').insert(rec));
+  if(error)return toast(error.message,1);
+  closeModals();toast(id?'Bill updated':'Bill recorded');loadAll();
+}
+async function deleteBill(){
+  const id=$('bId').value;if(!id||!confirm('Delete this supplier bill?'))return;
+  const{error}=await sb.from('supplier_invoices').delete().eq('id',id);
+  if(error)return toast(error.message,1);
+  closeModals();toast('Deleted');loadAll();
+}
+function openBillPayments(id){
+  billPayTarget=bills.find(b=>b.id===id);if(!billPayTarget)return;
+  $('bpTitle').textContent='Bill '+(billPayTarget.bill_no||'')+' -- '+billPayTarget.supplier_name;
+  $('bpSub').textContent=(billPayTarget.category||'')+(billPayTarget.project_name?' -- '+billPayTarget.project_name:'');
+  $('bpyDate').value=today();$('bpyAmt').value='';$('bpyRef').value='';
+  renderBillPayDetail();$('billPayOverlay').classList.add('open');
+}
+function renderBillPayDetail(){
+  const tot=Number(billPayTarget.total||0),paid=paidOf(billPayTarget);
+  $('bpTot').textContent=fmtSAR(tot);$('bpPd').textContent=fmtSAR(paid);$('bpBal').textContent=fmtSAR(tot-paid);
+  const ps=billPayTarget.payments||[];
+  $('billPayLog').innerHTML=ps.length?ps.map((p,i)=>`<div class="pay-row"><span>${fmtDate(p.date)} &middot; ${esc(p.method||'')}${p.ref?' &middot; '+esc(p.ref):''}</span><span><strong class="mono">${fmtSAR(p.amount)}</strong> <span class="rm" onclick="removeBillPayment(${i})">remove</span></span></div>`).join(''):'<div class="dim" style="padding:10px 0;font-size:13px">No payments recorded.</div>';
+}
+async function addBillPayment(){
+  const amt=Number($('bpyAmt').value||0);if(amt<=0)return toast('Enter a payment amount',1);
+  const p={amount:amt,date:$('bpyDate').value||today(),method:$('bpyMethod').value,ref:$('bpyRef').value.trim()||null};
+  const payments=[...(billPayTarget.payments||[]),p];
+  const{error}=await sb.from('supplier_invoices').update({payments}).eq('id',billPayTarget.id);
+  if(error)return toast(error.message,1);
+  billPayTarget.payments=payments;$('bpyAmt').value='';$('bpyRef').value='';
+  renderBillPayDetail();renderList();renderStats();
+  toast(balOf(billPayTarget)<=0.001?'Bill fully paid':'Payment recorded');
+}
+async function removeBillPayment(i){
+  const payments=(billPayTarget.payments||[]).slice();payments.splice(i,1);
+  const{error}=await sb.from('supplier_invoices').update({payments}).eq('id',billPayTarget.id);
+  if(error)return toast(error.message,1);
+  billPayTarget.payments=payments;renderBillPayDetail();renderList();renderStats();
+}
+
+
+// ================================================================
+// CREDIT NOTES
+// ================================================================
+function renderCreditNotes(){
+  const q=$('search').value.trim().toLowerCase();
+  let list=creditNotes.slice();
+  if(q)list=list.filter(c=>[c.cn_no,c.client_name,c.reason].some(v=>(v||'').toLowerCase().includes(q)));
+  if(!list.length){$('listBody').innerHTML='<div class="tbl-wrap"><div class="empty"><strong>No credit notes</strong>Issue a credit note when a client returns goods, receives a wrong order, or is due a refund.</div></div>';return;}
+  const REASON={wrong_item:'Wrong item',damaged:'Damaged',overpayment:'Overpayment',other:'Other'};
+  const STATUS={pending:{l:'Pending',c:'#C8A96E'},approved:{l:'Approved',c:'#2D7D46'},refunded:{l:'Refunded',c:'#888'}};
+  const rows=list.map(cn=>{
+    const s=STATUS[cn.status]||STATUS.pending;
+    const inv=invoices.find(i=>i.id===cn.invoice_id);
+    return`<tr class="rc" onclick="openCNModal('${cn.id}')">
+      <td class="mono"><strong>${esc(cn.cn_no||'--')}</strong></td>
+      <td><strong>${esc(cn.client_name||'--')}</strong>${inv?'<div class="dim">Ref: '+esc(inv.invoice_no||'')+'</div>':''}</td>
+      <td>${cn.reason?'<span class="badge" style="color:#888;border-color:#88844">'+esc(REASON[cn.reason]||cn.reason)+'</span>':'--'}</td>
+      <td class="dim">${cn.payment_method==='cash'?'Cash':cn.payment_method==='transfer'?'Transfer':'Credit invoice'}</td>
+      <td class="mono">${fmtSAR(cn.total)}</td>
+      <td><span class="badge" style="color:${s.c};border-color:${s.c}44">${s.l}</span></td>
+    </tr>`;
+  }).join('');
+  const total=list.reduce((s,c)=>s+num(c.total),0);
+  $('listBody').innerHTML=`<div class="tbl-wrap"><table>
+    <thead><tr><th>CN no.</th><th>Client</th><th>Reason</th><th>Method</th><th>Amount</th><th>Status</th></tr></thead>
+    <tbody>${rows}</tbody>
+    <tfoot><tr><td colspan="3" style="text-align:right;padding:11px 16px;border-top:1px solid var(--border);font-weight:600">Total</td><td style="padding:11px 16px;border-top:1px solid var(--border);font-weight:700" class="mono">${fmtSAR(total)}</td><td></td></tr></tfoot>
+  </table></div>`;
+}
+
+function nextCNNo(){
+  const y=new Date().getFullYear(),p=`APM-CN-${y}-`;
+  const nums=creditNotes.map(x=>x.cn_no).filter(n=>n&&n.startsWith(p)).map(n=>parseInt(n.slice(p.length),10)).filter(n=>!isNaN(n));
+  return p+String((nums.length?Math.max(...nums):0)+1).padStart(3,'0');
+}
+
+function openCNModal(id){
+  const cn=id?creditNotes.find(x=>x.id===id):null;
+  const invOpts='<option value="">-- No linked invoice --</option>'+invoices.map(i=>`<option value="${i.id}" ${cn?.invoice_id===i.id?'selected':''}>${esc(i.invoice_no||'--')} - ${esc(i.client_name||'')}</option>`).join('');
+  const itemRows=(cn?.items||[{desc:'',qty:1,rate:'',amount:0}]).map((l,i)=>`<tr id="cnrow${i}">
+    <td><input value="${esc(l.desc||'')}" placeholder="Item returned" oninput="cnRecalc()"></td>
+    <td><input type="number" value="${l.qty||1}" min="0" step="any" style="width:65px" oninput="cnRecalc()"></td>
+    <td><input type="number" value="${l.rate||''}" min="0" step="any" style="width:95px" oninput="cnRecalc()"></td>
+    <td class="mono right" id="cnamt${i}">${fmtSAR((l.qty||0)*(l.rate||0))}</td>
+    <td><button onclick="this.closest('tr').remove();cnRecalc()" style="background:none;border:none;color:var(--text3);font-size:16px;cursor:pointer">&times;</button></td>
+  </tr>`).join('');
+
+  const modal=document.createElement('div');
+  modal.className='overlay open';modal.id='cnOverlayEl';
+  modal.innerHTML=`<div class="modal">
+    <h2>${cn?'Edit credit note':'New credit note'}</h2>
+    <input type="hidden" id="cnId" value="${cn?.id||''}">
+    <div class="f2">
+      <div class="field"><label>Client name</label><input id="cnClient" value="${esc(cn?.client_name||'')}" placeholder="Client name"></div>
+      <div class="field"><label>Linked invoice</label><select id="cnInv">${invOpts}</select></div>
+    </div>
+    <div class="f2">
+      <div class="field"><label>Reason</label>
+        <select id="cnReason">
+          <option value="wrong_item" ${cn?.reason==='wrong_item'?'selected':''}>Wrong item delivered</option>
+          <option value="damaged" ${cn?.reason==='damaged'?'selected':''}>Damaged goods</option>
+          <option value="overpayment" ${cn?.reason==='overpayment'?'selected':''}>Overpayment</option>
+          <option value="other" ${cn?.reason==='other'?'selected':''}>Other</option>
+        </select>
+      </div>
+      <div class="field"><label>Status</label>
+        <select id="cnStatus">
+          <option value="pending" ${cn?.status==='pending'?'selected':''}>Pending</option>
+          <option value="approved" ${cn?.status==='approved'?'selected':''}>Approved</option>
+          <option value="refunded" ${cn?.status==='refunded'?'selected':''}>Refunded</option>
+        </select>
+      </div>
+    </div>
+    <div class="field">
+      <label>Credit settlement method</label>
+      <select id="cnMethod">
+        <option value="invoice" ${(cn?.payment_method||'invoice')==='invoice'?'selected':''}>Issue credit invoice (deduct from next invoice)</option>
+        <option value="cash" ${cn?.payment_method==='cash'?'selected':''}>Cash refund</option>
+        <option value="transfer" ${cn?.payment_method==='transfer'?'selected':''}>Bank transfer</option>
+      </select>
+    </div>
+    <div style="font-size:12px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--text3);margin-bottom:10px">Items being returned</div>
+    <table style="width:100%;border-collapse:collapse;font-size:13px;margin-bottom:8px">
+      <thead><tr style="background:var(--bg1)"><th style="padding:7px 8px;text-align:left;font-size:11px;font-weight:600;text-transform:uppercase;color:var(--text3);border-bottom:1px solid var(--border)">Description</th><th style="padding:7px 8px;font-size:11px;text-transform:uppercase;color:var(--text3);border-bottom:1px solid var(--border)">Qty</th><th style="padding:7px 8px;font-size:11px;text-transform:uppercase;color:var(--text3);border-bottom:1px solid var(--border)">Rate</th><th style="padding:7px 8px;font-size:11px;text-transform:uppercase;color:var(--text3);border-bottom:1px solid var(--border)">Amount</th><th></th></tr></thead>
+      <tbody id="cnItems">${itemRows}</tbody>
+    </table>
+    <button class="btn btn-sm" style="margin-bottom:14px;font-size:12px" onclick="addCNLine()">+ Add line</button>
+    <div class="sum-box" id="cnSum" style="background:var(--bg1);border:1px solid var(--border);border-radius:7px;padding:14px 16px;margin-bottom:14px"></div>
+    <div class="field"><label>Note</label><input id="cnNote" value="${esc(cn?.note||'')}" placeholder="optional"></div>
+    <div class="modal-foot">
+      ${cn?'<button class="btn btn-danger btn-sm mfl" id="cnDelBtn">Delete</button>':''}
+      <button class="btn btn-sm" onclick="closeCNModal()">Cancel</button>
+      <button class="btn btn-sm" onclick="printCN()">Print</button>
+      <button class="btn btn-gold btn-sm" onclick="saveCN()">Save</button>
+    </div>
+  </div>`;
+  document.body.appendChild(modal);
+  modal.addEventListener('click',e=>{if(e.target===modal)closeCNModal();});
+  const delBtn=modal.querySelector('#cnDelBtn');
+  if(delBtn&&id)delBtn.onclick=()=>deleteCN(id);
+  cnRecalc();
+}
+function closeCNModal(){const el=document.getElementById('cnOverlayEl');if(el)el.remove();}
+function addCNLine(){
+  const body=document.getElementById('cnItems');if(!body)return;
+  const i=body.querySelectorAll('tr').length;
+  const tr=document.createElement('tr');tr.id='cnrow'+i;
+  tr.innerHTML=`<td><input placeholder="Item returned" oninput="cnRecalc()"></td>
+    <td><input type="number" value="1" min="0" step="any" style="width:65px" oninput="cnRecalc()"></td>
+    <td><input type="number" min="0" step="any" style="width:95px" oninput="cnRecalc()"></td>
+    <td class="mono right" id="cnamt${i}">SAR 0</td>
+    <td><button onclick="this.closest('tr').remove();cnRecalc()" style="background:none;border:none;color:var(--text3);font-size:16px;cursor:pointer">&times;</button></td>`;
+  body.appendChild(tr);
+}
+function cnRecalc(){
+  const body=document.getElementById('cnItems');if(!body)return;
+  const rows=body.querySelectorAll('tr');
+  let sub=0;
+  rows.forEach((row,i)=>{
+    const inputs=row.querySelectorAll('input');
+    if(inputs.length>=3){
+      const amt=num(inputs[1].value)*num(inputs[2].value);
+      sub+=amt;
+      const amtCell=row.querySelector('td:nth-child(4)');
+      if(amtCell)amtCell.textContent=fmtSAR(amt);
+    }
+  });
+  const vat=sub*0.15;
+  const box=document.getElementById('cnSum');
+  if(box)box.innerHTML=`<div style="display:flex;justify-content:space-between;margin-bottom:6px;font-size:13.5px"><span class="dim">Subtotal</span><span class="mono">${fmtSAR(sub)}</span></div>
+    <div style="display:flex;justify-content:space-between;margin-bottom:6px;font-size:13.5px"><span class="dim">VAT 15%</span><span class="mono">${fmtSAR(vat)}</span></div>
+    <div style="display:flex;justify-content:space-between;font-size:14px;font-weight:700;border-top:1px solid var(--border);padding-top:8px"><span>Credit total</span><span class="mono" style="color:#C0392B">${fmtSAR(sub+vat)}</span></div>`;
+}
+function getCNItems(){
+  const body=document.getElementById('cnItems');if(!body)return[];
+  return Array.from(body.querySelectorAll('tr')).map(row=>{
+    const inputs=row.querySelectorAll('input');
+    if(!inputs||inputs.length<3)return null;
+    const qty=num(inputs[1].value),rate=num(inputs[2].value);
+    return{desc:inputs[0].value.trim(),qty,rate,amount:qty*rate};
+  }).filter(x=>x&&x.desc);
+}
+async function saveCN(){
+  const client=document.getElementById('cnClient')?.value.trim();
+  if(!client)return toast('Client name required',1);
+  const items=getCNItems();if(!items.length)return toast('Add at least one item',1);
+  const sub=items.reduce((s,i)=>s+i.amount,0),vat=sub*0.15;
+  const id=document.getElementById('cnId')?.value;
+  const rec={
+    client_name:client,
+    invoice_id:document.getElementById('cnInv')?.value||null,
+    reason:document.getElementById('cnReason')?.value,
+    status:document.getElementById('cnStatus')?.value,
+    payment_method:document.getElementById('cnMethod')?.value||'invoice',
+    items,subtotal:sub,vat,total:sub+vat,
+    note:document.getElementById('cnNote')?.value.trim()||null,
+  };
+  if(!id)rec.cn_no=nextCNNo();
+  const{error}=await(id?sb.from('apm_credit_notes').update(rec).eq('id',id):sb.from('apm_credit_notes').insert(rec));
+  if(error)return toast(error.message,1);
+  closeCNModal();toast('Credit note saved');loadAll();
+}
+async function deleteCN(id){
+  if(!confirm('Delete this credit note?'))return;
+  const{error}=await sb.from('apm_credit_notes').delete().eq('id',id);
+  if(error)return toast(error.message,1);
+  closeCNModal();toast('Deleted');loadAll();
+}
+function printCN(){
+  const client=document.getElementById('cnClient')?.value||'--';
+  const items=getCNItems();
+  const sub=items.reduce((s,i)=>s+i.amount,0),vat=sub*0.15;
+  const REASON={wrong_item:'Wrong item delivered',damaged:'Damaged goods',overpayment:'Overpayment',other:'Other'};
+  const reason=REASON[document.getElementById('cnReason')?.value]||'';
+  const w=window.open('','_blank');
+  w.document.write('<!DOCTYPE html><html><head><title>Credit Note</title>'
+    +'<style>body{font-family:Arial,sans-serif;max-width:720px;margin:40px auto;padding:0 24px;color:#111}'
+    +'h1{font-size:18px;border-bottom:2px solid #C0392B;padding-bottom:10px;color:#C0392B}'
+    +'.brand{font-size:20px;font-weight:800;margin-bottom:4px}.brand span{color:#C8A96E}'
+    +'table{width:100%;border-collapse:collapse;font-size:13px;margin:16px 0}'
+    +'th,td{padding:8px;border-bottom:1px solid #eee;text-align:left}'
+    +'th{background:#f5f5f5;font-size:11px;text-transform:uppercase;color:#666}'
+    +'.tot{font-weight:800;color:#C0392B}'
+    +'.sig{margin-top:60px;display:flex;justify-content:space-between}'
+    +'.sig div{border-top:1px solid #999;padding-top:6px;font-size:12px;width:40%;text-align:center}'
+    +'</style></head><body>'
+    +'<div class="brand">APM <span>Metal Works</span></div>'
+    +'<h1>CREDIT NOTE</h1>'
+    +'<div style="font-size:13px;color:#555;margin-bottom:20px">'
+    +'Client: <strong>'+esc(client)+'</strong> &nbsp;|&nbsp; Reason: '+esc(reason)
+    +' &nbsp;|&nbsp; Date: '+new Date().toLocaleDateString('en-GB')+'</div>'
+    +'<table><thead><tr><th>Description</th><th style="text-align:center">Qty</th><th style="text-align:right">Rate</th><th style="text-align:right">Amount</th></tr></thead>'
+    +'<tbody>'+items.map(i=>'<tr><td>'+esc(i.desc)+'</td><td style="text-align:center">'+i.qty+'</td><td style="text-align:right">SAR '+i.rate.toLocaleString()+'</td><td style="text-align:right">SAR '+i.amount.toLocaleString()+'</td></tr>').join('')+'</tbody>'
+    +'<tfoot>'
+    +'<tr><td colspan="3" style="text-align:right">Subtotal</td><td style="text-align:right">SAR '+sub.toLocaleString()+'</td></tr>'
+    +'<tr><td colspan="3" style="text-align:right">VAT 15%</td><td style="text-align:right">SAR '+vat.toLocaleString(undefined,{maximumFractionDigits:0})+'</td></tr>'
+    +'<tr class="tot"><td colspan="3" style="text-align:right">Total credit</td><td style="text-align:right">SAR '+(sub+vat).toLocaleString(undefined,{maximumFractionDigits:0})+'</td></tr>'
+    +'</tfoot></table>'
+    +'<div class="sig"><div>Issued by</div><div>Received by</div></div>'
+    +'<scr'+'ipt>window.onload=function(){window.print();}<'+'/scr'+'ipt></body></html>');
+  w.document.close();
+}
+
+
+// ================================================================
+// AGING REPORT
+// ================================================================
+function renderAging(){
+  const paidOf=inv=>(inv.payments||[]).reduce((s,p)=>s+Number(p.amount||0),0);
+  const today=new Date();
+  const buckets={current:[],d30:[],d60:[],d90:[]};
+  let totals={current:0,d30:0,d60:0,d90:0};
+
+  invoices.forEach(inv=>{
+    const bal=Number(inv.total||0)-paidOf(inv);
+    if(bal<=0.01)return; // fully paid, skip
+    const due=inv.due_date?new Date(inv.due_date):null;
+    const daysOver=due?Math.floor((today-due)/86400000):0;
+    let bucket='current';
+    if(daysOver>90)bucket='d90';
+    else if(daysOver>60)bucket='d60';
+    else if(daysOver>30)bucket='d30';
+    else if(daysOver>0)bucket='current'; // 0-30 overdue
+    else bucket='current'; // not yet due
+    buckets[bucket].push({...inv,bal,daysOver});
+    totals[bucket]+=bal;
+  });
+
+  const grandTotal=totals.current+totals.d30+totals.d60+totals.d90;
+
+  const bucketRows=(list,label)=>{
+    if(!list.length)return '';
+    return list.map(inv=>`<tr>
+      <td class="mono">${esc(inv.invoice_no||'--')}</td>
+      <td><strong>${esc(inv.client_name||'--')}</strong>${inv.project_name?'<div class="dim">'+esc(inv.project_name)+'</div>':''}</td>
+      <td class="mono dim">${fmtDate(inv.due_date)}</td>
+      <td class="mono dim">${inv.daysOver>0?inv.daysOver+' days':'Not due'}</td>
+      <td class="mono right" style="color:${inv.daysOver>60?'#C0392B':'inherit'};font-weight:${inv.daysOver>60?'700':'400'}">${fmtSAR(inv.bal)}</td>
+    </tr>`).join('');
+  };
+
+  $('listBody').innerHTML=`
+    <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:24px">
+      <div class="stat-cell" style="border:1px solid var(--border);border-radius:8px;padding:16px"><div class="stat-lbl">Current / not yet due</div><div class="stat-val" style="color:#2D7D46">${fmtSAR0(totals.current)}</div></div>
+      <div class="stat-cell" style="border:1px solid var(--border);border-radius:8px;padding:16px"><div class="stat-lbl">31-60 days overdue</div><div class="stat-val" style="color:#C8A96E">${fmtSAR0(totals.d30)}</div></div>
+      <div class="stat-cell" style="border:1px solid var(--border);border-radius:8px;padding:16px"><div class="stat-lbl">61-90 days overdue</div><div class="stat-val" style="color:#E67E22">${fmtSAR0(totals.d60)}</div></div>
+      <div class="stat-cell" style="border:1px solid var(--border);border-radius:8px;padding:16px"><div class="stat-lbl">90+ days overdue</div><div class="stat-val red">${fmtSAR0(totals.d90)}</div></div>
+    </div>
+    ${grandTotal===0?'<div class="tbl-wrap"><div class="empty"><strong>All invoices collected</strong>No outstanding receivables right now.</div></div>':`
+    <div style="font-size:15px;font-weight:700;margin-bottom:14px">Total outstanding: <span style="color:#C0392B">${fmtSAR(grandTotal)}</span></div>
+    ${buckets.d90.length?`<h4 style="margin:18px 0 8px;color:#C0392B;font-size:13px;text-transform:uppercase;letter-spacing:.05em">90+ days overdue -- urgent</h4>
+    <div class="tbl-wrap" style="margin-bottom:18px"><table><thead><tr><th>Invoice</th><th>Client</th><th>Due date</th><th>Days overdue</th><th class="right">Balance</th></tr></thead><tbody>${bucketRows(buckets.d90)}</tbody></table></div>`:''}
+    ${buckets.d60.length?`<h4 style="margin:18px 0 8px;color:#E67E22;font-size:13px;text-transform:uppercase;letter-spacing:.05em">61-90 days overdue</h4>
+    <div class="tbl-wrap" style="margin-bottom:18px"><table><thead><tr><th>Invoice</th><th>Client</th><th>Due date</th><th>Days overdue</th><th class="right">Balance</th></tr></thead><tbody>${bucketRows(buckets.d60)}</tbody></table></div>`:''}
+    ${buckets.d30.length?`<h4 style="margin:18px 0 8px;color:#C8A96E;font-size:13px;text-transform:uppercase;letter-spacing:.05em">31-60 days overdue</h4>
+    <div class="tbl-wrap" style="margin-bottom:18px"><table><thead><tr><th>Invoice</th><th>Client</th><th>Due date</th><th>Days overdue</th><th class="right">Balance</th></tr></thead><tbody>${bucketRows(buckets.d30)}</tbody></table></div>`:''}
+    ${buckets.current.length?`<h4 style="margin:18px 0 8px;color:#2D7D46;font-size:13px;text-transform:uppercase;letter-spacing:.05em">Current / due soon</h4>
+    <div class="tbl-wrap"><table><thead><tr><th>Invoice</th><th>Client</th><th>Due date</th><th>Days overdue</th><th class="right">Balance</th></tr></thead><tbody>${bucketRows(buckets.current)}</tbody></table></div>`:''}
+    `}`;
+}
+
+// Enter key in modals
+document.addEventListener('keydown',function(e){
+  if(e.key!=='Enter')return;
+  var t=e.target;
+  if(t.id==='iClient'||t.id==='iProject'||t.id==='iSub')saveInvoice();
+  if(t.id==='pyAmt'||t.id==='pyRef')addPayment();
+  if(t.id==='bSupplier'||t.id==='bNo'||t.id==='bSub'||t.id==='bNote')saveBill();
+  if(t.id==='bpyAmt'||t.id==='bpyRef')addBillPayment();
+});
+function closeModals(){document.querySelectorAll('.overlay').forEach(o=>o.classList.remove('open'));}
+document.querySelectorAll('.overlay').forEach(o=>o.addEventListener('click',e=>{if(e.target===o)closeModals();}));
+document.addEventListener('keydown',e=>{if(e.key==='Escape')closeModals();});
+loadAll();
+</script>
+</body>
+</html>
