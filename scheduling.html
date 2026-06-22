@@ -1,0 +1,324 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>Production Scheduling -- APM Metal Works</title>
+<script>
+(function(){
+  var K='apm_auth',T=10*60*60*1000;
+  try{var s=JSON.parse(sessionStorage.getItem(K));if(!s||Date.now()-s.ts>T)throw 0;}
+  catch(e){window.location.href='login.html';return;}
+  document.addEventListener('DOMContentLoaded',function(){
+    document.body.style.display='none';
+    var gate=document.createElement('div');gate.id='mod-gate';
+    gate.innerHTML='<style>#mod-gate{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;background:var(--bg,#fff);z-index:9999;font-family:inherit}#mod-gate .gc{width:100%;max-width:360px;padding:24px;border:1px solid var(--border,#d8d8d8);border-radius:10px;box-shadow:0 4px 20px rgba(0,0,0,.08)}#mod-gate h2{font-size:17px;font-weight:700;margin-bottom:4px}#mod-gate p{font-size:13px;color:var(--text3,#888);margin-bottom:20px}#mod-gate label{display:block;font-size:11px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--text3,#888);margin-bottom:7px}#mod-gate input{width:100%;padding:11px 13px;border:1px solid var(--border,#d8d8d8);border-radius:6px;background:var(--bg1,#f5f5f5);color:var(--text,#0a0a0a);font-size:14px;font-family:inherit;box-sizing:border-box}#mod-gate input:focus{outline:none;border-color:#C8A96E}#mod-gate input.err{border-color:#C0392B}#mod-gate .errmsg{display:none;color:#C0392B;font-size:12.5px;margin-top:8px}#mod-gate .errmsg.show{display:block}#mod-gate button{width:100%;margin-top:14px;padding:11px;background:#C8A96E;border:none;border-radius:6px;color:#0a0a0a;font-size:14px;font-weight:700;cursor:pointer}#mod-gate button:hover{background:#A8874E}#mod-gate button:disabled{opacity:.6;cursor:not-allowed}</style><div class="gc"><h2>Production Scheduling</h2><p>Enter the module password to continue.</p><label>Password</label><input id="mgpw" type="password" placeholder="Password"/><div class="errmsg" id="mgerr">Incorrect password.</div><button id="mgbtn" onclick="mgCheck()">Open</button></div>';
+    document.body.parentNode.insertBefore(gate,document.body);
+    document.getElementById('mgpw').addEventListener('keydown',function(e){if(e.key==='Enter'){e.preventDefault();mgCheck();}});
+    document.getElementById('mgpw').addEventListener('input',function(){document.getElementById('mgerr').classList.remove('show');document.getElementById('mgpw').classList.remove('err');});
+    setTimeout(function(){document.getElementById('mgpw').focus();},80);
+  });
+  window.mgCheck=function(){
+    var pw=document.getElementById('mgpw').value;
+    var btn=document.getElementById('mgbtn');btn.disabled=true;btn.textContent='Checking...';
+    fetch('https://spfztpokbpomqtiqgggz.supabase.co/rest/v1/apm_settings?key=eq.mod_pass_scheduling&select=value',{headers:{'apikey':'sb_publishable_xPXU0xL_YaiWA6k9PWc0Xg_4QYeypNi','Authorization':'Bearer sb_publishable_xPXU0xL_YaiWA6k9PWc0Xg_4QYeypNi'}})
+    .then(function(r){return r.json();}).then(function(d){
+      var correct=d&&d[0]&&d[0].value;
+      if(correct&&pw===correct){document.getElementById('mod-gate').remove();document.body.style.display='';}
+      else{document.getElementById('mgerr').classList.add('show');document.getElementById('mgpw').classList.add('err');document.getElementById('mgpw').value='';document.getElementById('mgpw').focus();btn.disabled=false;btn.textContent='Open';}
+    }).catch(function(){document.getElementById('mgerr').textContent='Could not connect.';document.getElementById('mgerr').classList.add('show');btn.disabled=false;btn.textContent='Open';});
+  };
+})();
+(function(){var t=localStorage.getItem('apm_theme')||'light';document.documentElement.setAttribute('data-theme',t);})();
+</script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+:root{--gold:#C8A96E;--gold-dk:#A8874E;--black:#0A0A0A;--bg:#FFFFFF;--bg1:#F5F5F5;--bg2:#EBEBEB;--border:#D8D8D8;--text:#0A0A0A;--text2:#444444;--text3:#888888;--shadow:rgba(0,0,0,.07)}
+[data-theme="dark"]{--bg:#0A0A0A;--bg1:#141414;--bg2:#1E1E1E;--border:#2A2A2A;--text:#F0F0F0;--text2:#AAAAAA;--text3:#666666;--shadow:rgba(0,0,0,.35)}
+*,*::before,*::after{margin:0;padding:0;box-sizing:border-box}
+body{background:var(--bg);color:var(--text);font-family:'Inter',-apple-system,sans-serif;min-height:100vh;-webkit-font-smoothing:antialiased}
+button{font-family:inherit;cursor:pointer}
+.topbar{display:flex;align-items:center;justify-content:space-between;padding:0 28px;height:56px;border-bottom:1px solid var(--border);background:var(--bg);position:sticky;top:0;z-index:40}
+.topbar-left{display:flex;align-items:center;gap:16px}
+.brand-link{display:flex;align-items:center;gap:10px;text-decoration:none;color:var(--text)}
+.brand-mark{width:30px;height:30px;border-radius:6px;background:var(--gold);display:grid;place-items:center;font-size:13px;font-weight:800;color:var(--black);flex:none}
+.brand-name{font-size:14px;font-weight:700}
+.page-label{font-size:13.5px;color:var(--text3);padding-left:16px;border-left:1px solid var(--border)}
+.theme-btn{width:32px;height:32px;border-radius:6px;background:transparent;border:1px solid var(--border);color:var(--text2);display:grid;place-items:center}.theme-btn:hover{border-color:var(--gold)}
+.btn{display:inline-flex;align-items:center;gap:6px;padding:8px 16px;border-radius:6px;font-size:13.5px;font-weight:600;border:1px solid var(--border);background:var(--bg1);color:var(--text);cursor:pointer;transition:border-color .15s}
+.btn:hover{border-color:var(--gold)}.btn-gold{background:var(--gold);border-color:var(--gold);color:var(--black)}.btn-gold:hover{background:var(--gold-dk)}
+.btn-danger{color:#C0392B;border-color:#C0392B33}.btn-sm{padding:6px 12px;font-size:12.5px}
+.wrap{max-width:1280px;margin:0 auto;padding:28px}
+.toolbar{display:flex;align-items:center;gap:12px;margin-bottom:20px;flex-wrap:wrap}
+.week-nav{display:flex;align-items:center;gap:8px}
+.week-nav button{width:34px;height:34px;border-radius:6px;border:1px solid var(--border);background:var(--bg1);color:var(--text);font-size:16px;display:grid;place-items:center}
+.week-nav button:hover{border-color:var(--gold)}
+.week-label{font-size:15px;font-weight:700;min-width:200px;text-align:center}
+.cap-summary{display:flex;gap:18px;margin-left:auto;font-size:13px;flex-wrap:wrap}
+.cap-summary .ci{display:flex;flex-direction:column}
+.cap-summary .ci .l{font-size:11px;color:var(--text3);text-transform:uppercase;letter-spacing:.05em}
+.cap-summary .ci .v{font-size:16px;font-weight:700}
+.sched-grid{border:1px solid var(--border);border-radius:10px;overflow:hidden;overflow-x:auto}
+.sched-table{width:100%;border-collapse:collapse;min-width:900px}
+.sched-table th{background:var(--bg1);padding:12px 10px;font-size:11.5px;font-weight:600;text-transform:uppercase;letter-spacing:.05em;color:var(--text3);border-bottom:1px solid var(--border);border-right:1px solid var(--border);text-align:center}
+.sched-table th.ws-col{text-align:left;width:150px;position:sticky;left:0;background:var(--bg1);z-index:2}
+.sched-table th.today{color:var(--gold-dk)}
+.sched-table td{border-bottom:1px solid var(--border);border-right:1px solid var(--border);vertical-align:top;padding:6px;height:90px;min-width:120px}
+.sched-table td.ws-cell{position:sticky;left:0;background:var(--bg);z-index:1;font-weight:600;font-size:13px;vertical-align:middle;padding:12px}
+.sched-table td.ws-cell .ws-type{font-size:11px;color:var(--text3);font-weight:400;text-transform:capitalize}
+.sched-table td.today-col{background:rgba(200,169,110,.04)}
+.sched-table td.over{background:rgba(192,57,43,.06)}
+.cap-bar{height:4px;border-radius:2px;background:var(--bg2);margin-top:6px;overflow:hidden}
+.cap-bar span{display:block;height:100%}
+.job-chip{background:var(--gold);color:var(--black);border-radius:5px;padding:5px 7px;font-size:11.5px;font-weight:600;margin-bottom:4px;cursor:pointer;line-height:1.3}
+.job-chip.delayed{background:#C0392B;color:#fff}
+.job-chip.done{background:#2D7D46;color:#fff}
+.job-chip .h{font-weight:400;font-size:10.5px;opacity:.85}
+.add-slot{width:100%;border:1px dashed var(--border);border-radius:5px;background:transparent;color:var(--text3);font-size:16px;padding:2px;cursor:pointer;opacity:0;transition:opacity .12s}
+.sched-table td:hover .add-slot{opacity:1}
+.empty{padding:52px 20px;text-align:center;color:var(--text3);font-size:14px}.empty strong{display:block;color:var(--text);margin-bottom:4px}
+.overlay{position:fixed;inset:0;background:rgba(0,0,0,.45);display:none;align-items:flex-start;justify-content:center;z-index:60;padding:6vh 16px;overflow-y:auto}.overlay.open{display:flex}
+.modal{background:var(--bg);border:1px solid var(--border);border-radius:10px;width:100%;max-width:520px;padding:28px;box-shadow:0 8px 32px var(--shadow)}
+.modal h2{font-size:17px;font-weight:700;margin-bottom:20px}
+.field{margin-bottom:14px}.field label{display:block;font-size:11.5px;font-weight:600;letter-spacing:.07em;text-transform:uppercase;color:var(--text3);margin-bottom:6px}
+.field input,.field select{width:100%;background:var(--bg1);border:1px solid var(--border);border-radius:6px;color:var(--text);padding:9px 11px;font-size:14px;font-family:inherit}
+.field input:focus,.field select:focus{outline:none;border-color:var(--gold)}
+.f2{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.modal-foot{display:flex;gap:10px;justify-content:flex-end;margin-top:20px;border-top:1px solid var(--border);padding-top:20px}
+.mfl{margin-right:auto}
+#toasts{position:fixed;bottom:20px;right:20px;display:flex;flex-direction:column;gap:8px;z-index:90}
+.toast{background:var(--bg);border:1px solid var(--border);border-left:3px solid var(--gold);border-radius:7px;padding:11px 16px;font-size:13.5px;min-width:220px;box-shadow:0 4px 16px var(--shadow);animation:tin .2s ease}.toast.err{border-left-color:#C0392B}
+@keyframes tin{from{transform:translateX(12px);opacity:0}}
+.loading{padding:60px;text-align:center;color:var(--text3)}
+</style>
+</head>
+<body>
+<header class="topbar">
+  <div class="topbar-left">
+    <a class="brand-link" href="dashboard.html"><div class="brand-mark">AP</div><span class="brand-name">APM Metal Works</span></a>
+    <span class="page-label">Production Scheduling</span>
+  </div>
+  <div style="display:flex;align-items:center;gap:10px">
+    <button class="theme-btn" onclick="toggleTheme()">
+      <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="8" cy="8" r="3"/><path d="M8 1v1.5M8 13.5V15M1 8h1.5M13.5 8H15M3.05 3.05l1.06 1.06M11.89 11.89l1.06 1.06M3.05 12.95l1.06-1.06M11.89 4.11l1.06-1.06"/></svg>
+    </button>
+    <button class="btn btn-sm" onclick="manageStations()">Workstations</button>
+    <button class="btn btn-gold btn-sm" onclick="openSchedule()">+ Schedule job</button>
+  </div>
+</header>
+
+<div class="wrap">
+  <div class="toolbar">
+    <div class="week-nav">
+      <button onclick="changeWeek(-1)">&#8249;</button>
+      <div class="week-label" id="weekLabel">--</div>
+      <button onclick="changeWeek(1)">&#8250;</button>
+    </div>
+    <button class="btn btn-sm" onclick="goToday()">Today</button>
+    <div class="cap-summary">
+      <div class="ci"><span class="l">Week capacity</span><span class="v" id="capTotal">--</span></div>
+      <div class="ci"><span class="l">Scheduled</span><span class="v" id="capUsed" style="color:var(--gold-dk)">--</span></div>
+      <div class="ci"><span class="l">Utilization</span><span class="v" id="capPct">--</span></div>
+    </div>
+  </div>
+  <div id="gridArea"><div class="loading">Loading...</div></div>
+</div>
+<div id="toasts"></div>
+
+<script>
+const SB_URL='https://spfztpokbpomqtiqgggz.supabase.co';
+const SB_KEY='sb_publishable_xPXU0xL_YaiWA6k9PWc0Xg_4QYeypNi';
+const sb=supabase.createClient(SB_URL,SB_KEY);
+const $=id=>document.getElementById(id);
+const esc=s=>(s??'').toString().replaceAll('&','&amp;').replaceAll('<','&lt;').replaceAll('>','&gt;').replaceAll('"','&quot;');
+const num=v=>Number(v)||0;
+
+function toggleTheme(){const n=document.documentElement.getAttribute('data-theme')==='dark'?'light':'dark';document.documentElement.setAttribute('data-theme',n);localStorage.setItem('apm_theme',n);}
+function toast(m,e){const t=document.createElement('div');t.className='toast'+(e?' err':'');t.textContent=m;$('toasts').appendChild(t);setTimeout(()=>t.remove(),3800);}
+document.addEventListener('keydown',e=>{if(e.key==='Escape')closeModals();});
+
+let stations=[],schedule=[],workOrders=[],weekStart=null;
+
+function startOfWeek(d){
+  const x=new Date(d);const day=x.getDay();
+  const diff=x.getDate()-day+(day===0?-6:1); // Monday start
+  x.setDate(diff);x.setHours(0,0,0,0);return x;
+}
+function fmtD(d){return d.toISOString().slice(0,10);}
+function dayName(d){return d.toLocaleDateString('en-GB',{weekday:'short'});}
+function dayNum(d){return d.getDate();}
+
+async function loadAll(){
+  if(!weekStart)weekStart=startOfWeek(new Date());
+  const[wsR,schR,woR]=await Promise.all([
+    sb.from('apm_workstations').select('*').eq('active',true).order('name'),
+    sb.from('apm_schedule').select('*'),
+    sb.from('apm_work_orders').select('id,wo_no,title,status').not('status','in',['completed','cancelled']),
+  ]);
+  if(wsR.error){$('gridArea').innerHTML='<div class="empty"><strong>Could not load</strong>Run scheduling_setup.sql in Supabase first.</div>';toast(wsR.error.message,1);return;}
+  stations=wsR.data||[];schedule=schR.data||[];workOrders=woR.data||[];
+  renderGrid();
+}
+
+function changeWeek(dir){weekStart=new Date(weekStart);weekStart.setDate(weekStart.getDate()+dir*7);renderGrid();}
+function goToday(){weekStart=startOfWeek(new Date());renderGrid();}
+
+function renderGrid(){
+  const days=[];for(let i=0;i<6;i++){const d=new Date(weekStart);d.setDate(d.getDate()+i);days.push(d);}
+  const todayStr=fmtD(new Date());
+  const weekEnd=new Date(weekStart);weekEnd.setDate(weekEnd.getDate()+5);
+  $('weekLabel').textContent=weekStart.toLocaleDateString('en-GB',{day:'numeric',month:'short'})+' - '+weekEnd.toLocaleDateString('en-GB',{day:'numeric',month:'short',year:'numeric'});
+
+  if(!stations.length){
+    $('gridArea').innerHTML='<div class="empty"><strong>No workstations</strong>Click "Workstations" above to add cutting bays, welding bays, etc.</div>';
+    return;
+  }
+
+  // Capacity calc for the week
+  let totalCap=0,totalUsed=0;
+  const dayStrs=days.map(fmtD);
+  stations.forEach(ws=>{totalCap+=num(ws.daily_hours)*6;});
+  schedule.forEach(s=>{if(dayStrs.includes(s.scheduled_date))totalUsed+=num(s.est_hours);});
+  $('capTotal').textContent=totalCap+'h';
+  $('capUsed').textContent=totalUsed+'h';
+  const pct=totalCap?Math.round(totalUsed/totalCap*100):0;
+  $('capPct').textContent=pct+'%';
+  $('capPct').style.color=pct>100?'#C0392B':pct>85?'#E67E22':'#2D7D46';
+
+  let html='<div class="sched-grid"><table class="sched-table"><thead><tr><th class="ws-col">Workstation</th>';
+  days.forEach(d=>{
+    const isToday=fmtD(d)===todayStr;
+    html+=`<th class="${isToday?'today':''}">${dayName(d)}<br>${dayNum(d)}</th>`;
+  });
+  html+='</tr></thead><tbody>';
+
+  stations.forEach(ws=>{
+    html+=`<tr><td class="ws-cell">${esc(ws.name)}<div class="ws-type">${esc(ws.type)} - ${ws.daily_hours}h/day</div></td>`;
+    days.forEach(d=>{
+      const ds=fmtD(d);
+      const isToday=ds===todayStr;
+      const jobs=schedule.filter(s=>s.workstation_id===ws.id&&s.scheduled_date===ds);
+      const dayHours=jobs.reduce((sum,j)=>sum+num(j.est_hours),0);
+      const over=dayHours>num(ws.daily_hours);
+      const capPct=Math.min(100,Math.round(dayHours/num(ws.daily_hours)*100));
+      const barColor=over?'#C0392B':capPct>85?'#E67E22':'#2D7D46';
+      html+=`<td class="${isToday?'today-col':''} ${over?'over':''}">`;
+      jobs.forEach(j=>{
+        const cls=j.status==='delayed'?'delayed':j.status==='done'?'done':'';
+        html+=`<div class="job-chip ${cls}" onclick="openSchedule('${j.id}')">${esc(j.title)}<div class="h">${j.est_hours}h${j.status==='delayed'?' - DELAYED':''}</div></div>`;
+      });
+      if(jobs.length)html+=`<div class="cap-bar"><span style="width:${capPct}%;background:${barColor}"></span></div>`;
+      html+=`<button class="add-slot" onclick="openSchedule(null,'${ws.id}','${ds}')">+</button>`;
+      html+='</td>';
+    });
+    html+='</tr>';
+  });
+  html+='</tbody></table></div>';
+  $('gridArea').innerHTML=html;
+}
+
+function openSchedule(id,wsId,date){
+  const s=id?schedule.find(x=>x.id===id):null;
+  const woOpts='<option value="">-- Select work order --</option>'+workOrders.map(w=>`<option value="${w.id}" ${s?.work_order_id===w.id?'selected':''}>${esc(w.wo_no)} - ${esc(w.title)}</option>`).join('');
+  const wsOpts=stations.map(w=>`<option value="${w.id}" ${(s?.workstation_id||wsId)===w.id?'selected':''}>${esc(w.name)}</option>`).join('');
+
+  const m=document.createElement('div');m.className='overlay open';m.id='schedOverlay';
+  m.innerHTML=`<div class="modal">
+    <h2>${s?'Edit scheduled job':'Schedule a job'}</h2>
+    <input type="hidden" id="schId" value="${s?.id||''}">
+    <div class="field"><label>Work order</label><select id="schWO" onchange="onWOPick()">${woOpts}</select></div>
+    <div class="field"><label>Job title / operation</label><input id="schTitle" value="${esc(s?.title||'')}" placeholder="e.g. Cut & weld gate frame"></div>
+    <div class="f2">
+      <div class="field"><label>Workstation</label><select id="schWS">${wsOpts}</select></div>
+      <div class="field"><label>Date</label><input id="schDate" type="date" value="${s?.scheduled_date||date||''}"></div>
+    </div>
+    <div class="f2">
+      <div class="field"><label>Estimated hours</label><input id="schHours" type="number" min="0" step="0.5" value="${s?.est_hours||''}" placeholder="4"></div>
+      <div class="field"><label>Status</label>
+        <select id="schStatus">
+          <option value="scheduled" ${(s?.status||'scheduled')==='scheduled'?'selected':''}>Scheduled</option>
+          <option value="in_progress" ${s?.status==='in_progress'?'selected':''}>In progress</option>
+          <option value="done" ${s?.status==='done'?'selected':''}>Done</option>
+          <option value="delayed" ${s?.status==='delayed'?'selected':''}>Delayed</option>
+        </select>
+      </div>
+    </div>
+    <div class="field"><label>Note</label><input id="schNote" value="${esc(s?.note||'')}" placeholder="optional"></div>
+    <div class="modal-foot">
+      ${s?'<button class="btn btn-danger btn-sm mfl" id="schDel">Delete</button>':''}
+      <button class="btn btn-sm" onclick="closeModals()">Cancel</button>
+      <button class="btn btn-gold btn-sm" onclick="saveSchedule()">Save</button>
+    </div>
+  </div>`;
+  document.body.appendChild(m);
+  m.addEventListener('click',e=>{if(e.target===m)closeModals();});
+  const del=m.querySelector('#schDel');if(del&&id)del.onclick=()=>deleteSchedule(id);
+}
+function onWOPick(){
+  const sel=$('schWO');const wo=workOrders.find(w=>w.id===sel.value);
+  if(wo&&!$('schTitle').value)$('schTitle').value=wo.title;
+}
+async function saveSchedule(){
+  const title=$('schTitle').value.trim();if(!title)return toast('Title required',1);
+  const date=$('schDate').value;if(!date)return toast('Date required',1);
+  const id=$('schId').value;
+  const rec={
+    work_order_id:$('schWO').value||null,
+    workstation_id:$('schWS').value||null,
+    title,scheduled_date:date,
+    est_hours:num($('schHours').value),
+    status:$('schStatus').value,
+    note:$('schNote').value.trim()||null,
+  };
+  const{error}=await(id?sb.from('apm_schedule').update(rec).eq('id',id):sb.from('apm_schedule').insert(rec));
+  if(error)return toast(error.message,1);
+  closeModals();toast(id?'Updated':'Job scheduled');loadAll();
+}
+async function deleteSchedule(id){
+  if(!confirm('Remove this scheduled job?'))return;
+  const{error}=await sb.from('apm_schedule').delete().eq('id',id);
+  if(error)return toast(error.message,1);
+  closeModals();toast('Removed');loadAll();
+}
+
+// Workstation management
+function manageStations(){
+  const m=document.createElement('div');m.className='overlay open';m.id='wsOverlay';
+  m.innerHTML=`<div class="modal">
+    <h2>Workstations</h2>
+    <div id="wsList" style="margin-bottom:16px">${stations.map(w=>`
+      <div style="display:flex;align-items:center;justify-content:space-between;padding:10px 14px;border:1px solid var(--border);border-radius:7px;margin-bottom:8px">
+        <div><strong>${esc(w.name)}</strong><div style="font-size:12px;color:var(--text3)">${esc(w.type)} - ${w.daily_hours}h/day</div></div>
+        <button class="btn btn-danger btn-sm" onclick="delStation('${w.id}')">Remove</button>
+      </div>`).join('')||'<div style="color:var(--text3);padding:10px 0">No workstations yet.</div>'}</div>
+    <div style="border-top:1px solid var(--border);padding-top:16px">
+      <div class="field"><label>New workstation name</label><input id="wsName" placeholder="e.g. Welding bay 3"></div>
+      <div class="f2">
+        <div class="field"><label>Type</label><select id="wsType"><option value="cutting">Cutting</option><option value="welding">Welding</option><option value="finishing">Finishing</option><option value="assembly">Assembly</option><option value="general">General</option></select></div>
+        <div class="field"><label>Hours/day</label><input id="wsHours" type="number" min="1" max="24" value="8"></div>
+      </div>
+      <button class="btn btn-gold btn-sm" onclick="addStation()">+ Add workstation</button>
+    </div>
+    <div class="modal-foot"><button class="btn btn-sm" onclick="closeModals()">Close</button></div>
+  </div>`;
+  document.body.appendChild(m);
+  m.addEventListener('click',e=>{if(e.target===m)closeModals();});
+}
+async function addStation(){
+  const name=$('wsName').value.trim();if(!name)return toast('Name required',1);
+  const{error}=await sb.from('apm_workstations').insert({name,type:$('wsType').value,daily_hours:num($('wsHours').value)||8});
+  if(error)return toast(error.message,1);
+  closeModals();toast('Workstation added');loadAll();
+}
+async function delStation(id){
+  if(!confirm('Remove this workstation?'))return;
+  const{error}=await sb.from('apm_workstations').update({active:false}).eq('id',id);
+  if(error)return toast(error.message,1);
+  closeModals();toast('Removed');loadAll();
+}
+
+function closeModals(){document.querySelectorAll('.overlay').forEach(o=>{if(['schedOverlay','wsOverlay'].includes(o.id))o.remove();});}
+
+loadAll();
+</script>
+</body>
+</html>
