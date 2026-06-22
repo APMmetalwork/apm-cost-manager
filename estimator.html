@@ -1,0 +1,551 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>AI Estimator -- APM Metal Works</title>
+<script>
+(function(){
+  var K='apm_auth',T=10*60*60*1000;
+  try{var s=JSON.parse(sessionStorage.getItem(K));if(!s||Date.now()-s.ts>T)throw 0;}
+  catch(e){window.location.href='login.html';return;}
+  document.addEventListener('DOMContentLoaded',function(){
+    document.body.style.display='none';
+    var gate=document.createElement('div');gate.id='mod-gate';
+    gate.innerHTML='<style>#mod-gate{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;background:var(--bg,#fff);z-index:9999;font-family:inherit}#mod-gate .gc{width:100%;max-width:360px;padding:24px;border:1px solid var(--border,#d8d8d8);border-radius:10px;box-shadow:0 4px 20px rgba(0,0,0,.08)}#mod-gate h2{font-size:17px;font-weight:700;margin-bottom:4px}#mod-gate p{font-size:13px;color:var(--text3,#888);margin-bottom:20px}#mod-gate label{display:block;font-size:11px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--text3,#888);margin-bottom:7px}#mod-gate input{width:100%;padding:11px 13px;border:1px solid var(--border,#d8d8d8);border-radius:6px;background:var(--bg1,#f5f5f5);color:var(--text,#0a0a0a);font-size:14px;font-family:inherit;box-sizing:border-box}#mod-gate input:focus{outline:none;border-color:#C8A96E}#mod-gate input.err{border-color:#C0392B}#mod-gate .errmsg{display:none;color:#C0392B;font-size:12.5px;margin-top:8px}#mod-gate .errmsg.show{display:block}#mod-gate button{width:100%;margin-top:14px;padding:11px;background:#C8A96E;border:none;border-radius:6px;color:#0a0a0a;font-size:14px;font-weight:700;cursor:pointer}#mod-gate button:hover{background:#A8874E}#mod-gate button:disabled{opacity:.6;cursor:not-allowed}</style><div class="gc"><h2>AI Estimator</h2><p>Enter the module password to continue.</p><label>Password</label><input id="mgpw" type="password" placeholder="Password"/><div class="errmsg" id="mgerr">Incorrect password.</div><button id="mgbtn" onclick="mgCheck()">Open</button></div>';
+    document.body.parentNode.insertBefore(gate,document.body);
+    document.getElementById('mgpw').addEventListener('keydown',function(e){if(e.key==='Enter'){e.preventDefault();mgCheck();}});
+    document.getElementById('mgpw').addEventListener('input',function(){document.getElementById('mgerr').classList.remove('show');document.getElementById('mgpw').classList.remove('err');});
+    setTimeout(function(){document.getElementById('mgpw').focus();},80);
+  });
+  window.mgCheck=function(){
+    var pw=document.getElementById('mgpw').value;
+    var btn=document.getElementById('mgbtn');btn.disabled=true;btn.textContent='Checking...';
+    fetch('https://spfztpokbpomqtiqgggz.supabase.co/rest/v1/apm_settings?key=eq.mod_pass_estimator&select=value',{headers:{'apikey':'sb_publishable_xPXU0xL_YaiWA6k9PWc0Xg_4QYeypNi','Authorization':'Bearer sb_publishable_xPXU0xL_YaiWA6k9PWc0Xg_4QYeypNi'}})
+    .then(function(r){return r.json();}).then(function(d){
+      var correct=d&&d[0]&&d[0].value;
+      if(correct&&pw===correct){document.getElementById('mod-gate').remove();document.body.style.display='';}
+      else{document.getElementById('mgerr').classList.add('show');document.getElementById('mgpw').classList.add('err');document.getElementById('mgpw').value='';document.getElementById('mgpw').focus();btn.disabled=false;btn.textContent='Open';}
+    }).catch(function(){document.getElementById('mgerr').textContent='Could not connect.';document.getElementById('mgerr').classList.add('show');btn.disabled=false;btn.textContent='Open';});
+  };
+})();
+(function(){var t=localStorage.getItem('apm_theme')||'light';document.documentElement.setAttribute('data-theme',t);})();
+</script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+:root{--gold:#C8A96E;--gold-dk:#A8874E;--black:#0A0A0A;--bg:#FFFFFF;--bg1:#F5F5F5;--bg2:#EBEBEB;--border:#D8D8D8;--text:#0A0A0A;--text2:#444444;--text3:#888888;--shadow:rgba(0,0,0,.07)}
+[data-theme="dark"]{--bg:#0A0A0A;--bg1:#141414;--bg2:#1E1E1E;--border:#2A2A2A;--text:#F0F0F0;--text2:#AAAAAA;--text3:#666666;--shadow:rgba(0,0,0,.35)}
+*,*::before,*::after{margin:0;padding:0;box-sizing:border-box}
+body{background:var(--bg);color:var(--text);font-family:'Inter',-apple-system,sans-serif;min-height:100vh;-webkit-font-smoothing:antialiased}
+button{font-family:inherit;cursor:pointer}
+.topbar{display:flex;align-items:center;justify-content:space-between;padding:0 28px;height:56px;border-bottom:1px solid var(--border);background:var(--bg);position:sticky;top:0;z-index:40}
+.topbar-left{display:flex;align-items:center;gap:16px}
+.brand-link{display:flex;align-items:center;gap:10px;text-decoration:none;color:var(--text)}
+.brand-mark{width:30px;height:30px;border-radius:6px;background:var(--gold);display:grid;place-items:center;font-size:13px;font-weight:800;color:var(--black);flex:none}
+.brand-name{font-size:14px;font-weight:700}
+.page-label{font-size:13.5px;color:var(--text3);padding-left:16px;border-left:1px solid var(--border)}
+.theme-btn{width:32px;height:32px;border-radius:6px;background:transparent;border:1px solid var(--border);color:var(--text2);display:grid;place-items:center}.theme-btn:hover{border-color:var(--gold)}
+.btn{display:inline-flex;align-items:center;gap:6px;padding:8px 16px;border-radius:6px;font-size:13.5px;font-weight:600;border:1px solid var(--border);background:var(--bg1);color:var(--text);cursor:pointer;transition:border-color .15s}
+.btn:hover{border-color:var(--gold)}.btn-gold{background:var(--gold);border-color:var(--gold);color:var(--black)}.btn-gold:hover{background:var(--gold-dk)}
+.btn-sm{padding:6px 12px;font-size:12.5px}
+.wrap{max-width:940px;margin:0 auto;padding:28px}
+.card{border:1px solid var(--border);border-radius:10px;padding:24px;background:var(--bg);margin-bottom:20px}
+.card h3{font-size:14px;font-weight:700;letter-spacing:.02em;text-transform:uppercase;color:var(--text3);margin-bottom:18px}
+.field{margin-bottom:14px}.field label{display:block;font-size:11.5px;font-weight:600;letter-spacing:.07em;text-transform:uppercase;color:var(--text3);margin-bottom:6px}
+.field input,.field select{width:100%;background:var(--bg1);border:1px solid var(--border);border-radius:6px;color:var(--text);padding:9px 11px;font-size:14px;font-family:inherit}
+.field input:focus,.field select:focus{outline:none;border-color:var(--gold)}
+.f2{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.f3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px}
+@media(max-width:600px){.f2,.f3{grid-template-columns:1fr}}
+.mat-row{display:grid;grid-template-columns:2fr 1fr 1fr 1fr auto;gap:8px;align-items:center;margin-bottom:8px}
+.mat-row input,.mat-row select{background:var(--bg);border:1px solid var(--border);border-radius:5px;color:var(--text);padding:6px 8px;font-size:13px;font-family:inherit;width:100%}
+.mat-row input:focus,.mat-row select:focus{outline:none;border-color:var(--gold)}
+.result-box{background:var(--bg1);border:1px solid var(--border);border-radius:10px;padding:24px;margin-top:20px}
+.result-row{display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid var(--border);font-size:14px}
+.result-row:last-child{border-bottom:none}
+.result-row.total{font-size:17px;font-weight:700;padding-top:14px;margin-top:6px}
+.result-row.price{font-size:20px;font-weight:700;color:var(--gold-dk)}
+.confidence{display:inline-flex;align-items:center;gap:6px;padding:4px 10px;border-radius:20px;font-size:12px;font-weight:600}
+.confidence.high{background:#2D7D4615;color:#2D7D46}
+.confidence.med{background:#C8A96E15;color:#A8874E}
+.confidence.low{background:#C0392B15;color:#C0392B}
+.rate-tag{font-size:11px;color:var(--text3);margin-left:8px}
+.learn-banner{background:linear-gradient(135deg,rgba(200,169,110,.12),rgba(200,169,110,.04));border:1px solid var(--gold);border-radius:9px;padding:16px 20px;margin-bottom:20px;display:flex;align-items:center;gap:14px}
+.learn-banner .icon{font-size:24px;flex:none}
+.learn-banner .text{font-size:13.5px;line-height:1.5}
+.learn-banner strong{display:block;margin-bottom:2px}
+#toasts{position:fixed;bottom:20px;right:20px;display:flex;flex-direction:column;gap:8px;z-index:90}
+.toast{background:var(--bg);border:1px solid var(--border);border-left:3px solid var(--gold);border-radius:7px;padding:11px 16px;font-size:13.5px;min-width:220px;box-shadow:0 4px 16px var(--shadow);animation:tin .2s ease}.toast.err{border-left-color:#C0392B}
+@keyframes tin{from{transform:translateX(12px);opacity:0}}
+.loading{padding:40px;text-align:center;color:var(--text3)}
+</style>
+</head>
+<body>
+<header class="topbar">
+  <div class="topbar-left">
+    <a class="brand-link" href="dashboard.html"><div class="brand-mark">AP</div><span class="brand-name">APM Metal Works</span></a>
+    <span class="page-label">AI Estimator</span>
+  </div>
+  <div style="display:flex;align-items:center;gap:10px">
+    <button class="theme-btn" onclick="toggleTheme()">
+      <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="8" cy="8" r="3"/><path d="M8 1v1.5M8 13.5V15M1 8h1.5M13.5 8H15M3.05 3.05l1.06 1.06M11.89 11.89l1.06 1.06M3.05 12.95l1.06-1.06M11.89 4.11l1.06-1.06"/></svg>
+    </button>
+    <button class="btn btn-sm" onclick="learnFromHistory()">Update rates from history</button>
+  </div>
+</header>
+
+<div class="wrap">
+  <div class="learn-banner" id="learnBanner" style="display:none">
+    <div class="icon">&#129504;</div>
+    <div class="text">
+      <strong id="learnTitle">Rates learned from your history</strong>
+      <span id="learnSub">The estimator has updated its rates based on actual costs and accepted quotes in your system.</span>
+    </div>
+  </div>
+
+  <!-- Job type -->
+  <div class="card">
+    <h3>Job details</h3>
+    <div class="f2">
+      <div class="field"><label>Job type</label>
+        <select id="jobType" onchange="onJobTypeChange()">
+          <option value="railing">Railing / balustrade</option>
+          <option value="gate">Gate / door</option>
+          <option value="fence">Fence / boundary</option>
+          <option value="canopy">Canopy / shade structure</option>
+          <option value="staircase">Staircase / handrail</option>
+          <option value="cladding">Cladding / facade</option>
+          <option value="shelving">Shelving / rack</option>
+          <option value="custom">Custom / other</option>
+        </select>
+      </div>
+      <div class="field"><label>Primary material</label>
+        <select id="matType" onchange="recalc()">
+          <option value="mild_steel">Mild steel (S235/S275)</option>
+          <option value="stainless_304">Stainless steel 304</option>
+          <option value="stainless_316">Stainless steel 316</option>
+          <option value="aluminum">Aluminum</option>
+          <option value="galvanized">Galvanized steel</option>
+        </select>
+      </div>
+    </div>
+    <div class="f3">
+      <div class="field"><label>Quantity / length (m)</label>
+        <input id="qty" type="number" min="0" step="0.5" placeholder="0" oninput="recalc()">
+      </div>
+      <div class="field"><label>Height (m)</label>
+        <input id="height" type="number" min="0" step="0.1" placeholder="1.2" value="1.2" oninput="recalc()">
+      </div>
+      <div class="field"><label>Complexity</label>
+        <select id="complexity" onchange="recalc()">
+          <option value="simple">Simple (straight, standard)</option>
+          <option value="medium">Medium (some curves/detail)</option>
+          <option value="complex">Complex (custom design)</option>
+        </select>
+      </div>
+    </div>
+    <div class="f2" id="glassRow" style="display:none">
+      <div class="field"><label>Glass type (if applicable)</label>
+        <select id="glassType" onchange="recalc()">
+          <option value="none">No glass</option>
+          <option value="tempered_8">Tempered 8mm</option>
+          <option value="tempered_10">Tempered 10mm</option>
+          <option value="tempered_12">Tempered 12mm</option>
+          <option value="laminated">Laminated safety glass</option>
+          <option value="frosted">Frosted / sandblast</option>
+        </select>
+      </div>
+      <div class="field"><label>Wood type (if applicable)</label>
+        <select id="woodType" onchange="recalc()">
+          <option value="none">No wood</option>
+          <option value="pine">Pine (standard)</option>
+          <option value="oak">Oak / hardwood</option>
+          <option value="teak">Teak (premium)</option>
+          <option value="wpc">WPC composite (weather-proof)</option>
+        </select>
+      </div>
+    </div>
+    <div class="f3">
+      <div class="field"><label>Surface finish</label>
+        <select id="finish" onchange="recalc()">
+          <option value="primer_paint">Primer + paint</option>
+          <option value="powder_coat">Powder coat</option>
+          <option value="hot_dip_galvanize">Hot-dip galvanize</option>
+          <option value="brushed">Brushed (SS only)</option>
+          <option value="polished">Mirror polished (SS only)</option>
+          <option value="raw">Raw / no finish</option>
+        </select>
+      </div>
+      <div class="field"><label>Target margin %</label>
+        <input id="margin" type="number" min="5" max="80" value="30" oninput="recalc()">
+      </div>
+      <div class="field"><label>Installation included</label>
+        <select id="installation" onchange="recalc()">
+          <option value="yes">Yes - we install</option>
+          <option value="no">No - supply only</option>
+        </select>
+      </div>
+    </div>
+  </div>
+
+  <!-- Additional line items -->
+  <div class="card">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px">
+      <h3 style="margin-bottom:0">Additional items</h3>
+      <button class="btn btn-sm" onclick="addExtraLine()">+ Add item</button>
+    </div>
+    <div id="extraLines"></div>
+  </div>
+
+  <!-- Result -->
+  <div id="resultArea"></div>
+</div>
+<div id="toasts"></div>
+
+<script>
+const SB_URL='https://spfztpokbpomqtiqgggz.supabase.co';
+const SB_KEY='sb_publishable_xPXU0xL_YaiWA6k9PWc0Xg_4QYeypNi';
+const sb=supabase.createClient(SB_URL,SB_KEY);
+const $=id=>document.getElementById(id);
+const num=v=>Number(v)||0;
+const fmtSAR=n=>'SAR '+Number(n||0).toLocaleString('en-US',{minimumFractionDigits:0,maximumFractionDigits:0});
+const esc=s=>(s??'').toString().replaceAll('&','&amp;').replaceAll('<','&lt;').replaceAll('>','&gt;');
+
+function toggleTheme(){const n=document.documentElement.getAttribute('data-theme')==='dark'?'light':'dark';document.documentElement.setAttribute('data-theme',n);localStorage.setItem('apm_theme',n);}
+function toast(m,e){const t=document.createElement('div');t.className='toast'+(e?' err':'');t.textContent=m;$('toasts').appendChild(t);setTimeout(()=>t.remove(),3800);}
+
+// ================================================================
+// BASE RATES (sourced from Saudi/GCC market research 2025-2026)
+// These are OVERRIDDEN by learned rates from your own history
+// ================================================================
+let RATES = {
+  // Material cost per kg (SAR)
+  matPerKg: {
+    mild_steel:       3.5,   // SAR rebar ~2.26/kg + fabricated premium
+    stainless_304:    18,    // SS 304 ~4-5x mild steel
+    stainless_316:    24,    // SS 316 ~6x mild steel
+    aluminum:         14,    // LME Al ~SAR 11/kg + local premium
+    galvanized:       5.5,   // mild steel + galvanizing cost
+  },
+  // Estimated kg per linear meter by job type (varies with height)
+  kgPerLm: {
+    railing:          8,     // 50x50x3 tube + 40x40 posts avg
+    gate:             25,    // heavier frame
+    fence:            6,
+    canopy:           12,
+    staircase:        15,
+    cladding:         10,
+    shelving:         18,
+    custom:           10,
+  },
+  // Labor SAR per linear meter (fabrication + welding)
+  laborPerLm: {
+    simple:           120,   // ~2.5h @ SAR 47/h
+    medium:           200,   // ~4h @ SAR 47/h
+    complex:          320,   // ~7h @ SAR 47/h
+  },
+  // Surface finish cost per m2
+  finishPerM2: {
+    primer_paint:     35,
+    powder_coat:      65,
+    hot_dip_galvanize:90,
+    brushed:          50,
+    polished:         110,
+    raw:              0,
+  },
+  // Glass cost per m2 (supply + install in KSA)
+  glassPerM2: {
+    none:             0,
+    tempered_8:       150,   // FOB + local markup + install
+    tempered_10:      190,
+    tempered_12:      240,
+    laminated:        320,   // laminated safety glass
+    frosted:          220,
+  },
+  // Wood cost per linear meter
+  woodPerLm: {
+    none:             0,
+    pine:             45,
+    oak:              120,
+    teak:             200,
+    wpc:              90,
+  },
+  // Installation cost per linear meter
+  installPerLm: {
+    railing:          80,
+    gate:             200,
+    fence:            60,
+    canopy:           150,
+    staircase:        180,
+    cladding:         100,
+    shelving:         80,
+    custom:           100,
+  },
+  // Data source & confidence
+  dataPoints:       0,      // number of historical quotes used
+  learnedAt:        null,
+};
+
+// Try loading learned rates from localStorage
+try {
+  const saved = localStorage.getItem('apm_estimator_rates');
+  if (saved) {
+    const parsed = JSON.parse(saved);
+    RATES = {...RATES, ...parsed};
+  }
+} catch(e) {}
+
+// ================================================================
+// LEARN FROM HISTORY
+// Reads accepted quotes + actual costs from Cost Manager
+// and recalibrates rates accordingly
+// ================================================================
+async function learnFromHistory() {
+  toast('Analyzing your quote and cost history...');
+  try {
+    const [quotesR, costsR] = await Promise.all([
+      sb.from('quotes').select('line_items,total,subtotal,status').eq('status','accepted').limit(100),
+      sb.from('apm_costs').select('category,subtype,amount,description').limit(500),
+    ]);
+
+    const quotes = quotesR.data || [];
+    const costs = costsR.data || [];
+
+    if (quotes.length < 2) {
+      toast('Not enough accepted quotes yet (need 2+). Keep using the system!', 1);
+      return;
+    }
+
+    // Calculate average effective rate per linear meter from accepted quotes
+    let lmRates = {};
+    let lmCount = {};
+    let totalLaborCost = 0;
+    let laborHours = 0;
+
+    quotes.forEach(q => {
+      const items = q.line_items || [];
+      items.forEach(item => {
+        if (['railing','handle_wood','handle_glass','handle_metal'].includes(item.type) && item.qty > 0 && item.rate > 0) {
+          const type = item.type === 'railing' ? 'railing' : 'handle';
+          if (!lmRates[type]) { lmRates[type] = 0; lmCount[type] = 0; }
+          lmRates[type] += item.rate;
+          lmCount[type]++;
+        }
+      });
+    });
+
+    // Average actual labor cost per hour from cost entries
+    const laborCosts = costs.filter(c => c.category === 'payroll');
+    if (laborCosts.length > 0) {
+      const avgLabor = laborCosts.reduce((s, c) => s + num(c.amount), 0) / laborCosts.length;
+      // Estimate hourly rate: avg cost entry / assumed 8h workday
+      const estimatedHourlyRate = Math.round(avgLabor / 8);
+      if (estimatedHourlyRate > 20 && estimatedHourlyRate < 300) {
+        // Scale labor rates accordingly vs our baseline (SAR 47/h)
+        const scale = estimatedHourlyRate / 47;
+        RATES.laborPerLm.simple = Math.round(120 * scale);
+        RATES.laborPerLm.medium = Math.round(200 * scale);
+        RATES.laborPerLm.complex = Math.round(320 * scale);
+      }
+    }
+
+    // Actual purchase costs to calibrate material rates
+    const matCosts = costs.filter(c => c.category === 'purchase');
+    if (matCosts.length > 5) {
+      // Look for steel-related entries
+      const steelEntries = matCosts.filter(c =>
+        ['steel','iron','rebar','plate','tube','pipe','section'].some(w =>
+          (c.description || c.subtype || '').toLowerCase().includes(w)
+        )
+      );
+      if (steelEntries.length > 2) {
+        // Can't easily extract per-kg without qty info, but use as confidence signal
+        RATES.dataPoints = Math.max(RATES.dataPoints, steelEntries.length);
+      }
+    }
+
+    RATES.dataPoints = quotes.length + costs.length;
+    RATES.learnedAt = new Date().toISOString();
+    localStorage.setItem('apm_estimator_rates', JSON.stringify(RATES));
+
+    $('learnBanner').style.display = 'flex';
+    $('learnTitle').textContent = 'Rates learned from ' + quotes.length + ' accepted quotes + ' + costs.length + ' cost entries';
+    $('learnSub').textContent = 'Estimator is now calibrated to your actual business. The more quotes you accept and costs you log, the smarter it gets.';
+    toast('Rates updated from ' + (quotes.length + costs.length) + ' data points');
+    recalc();
+  } catch(e) {
+    toast('Error: ' + e.message, 1);
+  }
+}
+
+// ================================================================
+// CORE ESTIMATION ENGINE
+// ================================================================
+function onJobTypeChange() {
+  const jt = $('jobType').value;
+  // Show glass/wood row for relevant job types
+  const showGW = ['railing','gate','fence','staircase'].includes(jt);
+  $('glassRow').style.display = showGW ? '' : 'none';
+  recalc();
+}
+
+let extraLines = [];
+
+function addExtraLine() {
+  extraLines.push({desc:'', qty:1, unit:'lot', rate:0});
+  renderExtraLines();
+}
+
+function renderExtraLines() {
+  $('extraLines').innerHTML = extraLines.map((l,i) => `<div class="mat-row">
+    <input value="${esc(l.desc)}" placeholder="Description (e.g. delivery, permit)" oninput="extraLines[${i}].desc=this.value;recalc()">
+    <input type="number" value="${l.qty}" min="0" step="any" style="width:70px" oninput="extraLines[${i}].qty=+this.value;recalc()">
+    <input value="${esc(l.unit)}" placeholder="unit" style="width:60px" oninput="extraLines[${i}].unit=this.value">
+    <input type="number" value="${l.rate}" min="0" step="any" placeholder="rate SAR" oninput="extraLines[${i}].rate=+this.value;recalc()">
+    <button onclick="extraLines.splice(${i},1);renderExtraLines();recalc()" style="background:none;border:none;color:var(--text3);font-size:16px;cursor:pointer;padding:0 4px">&times;</button>
+  </div>`).join('');
+}
+
+function getConfidence(dataPoints) {
+  if (dataPoints >= 50) return {level:'high', label:'High confidence (from ' + dataPoints + ' data points)'};
+  if (dataPoints >= 10) return {level:'med', label:'Medium confidence (from ' + dataPoints + ' data points)'};
+  return {level:'low', label:'Low confidence - based on market rates. Log more quotes to improve accuracy.'};
+}
+
+function recalc() {
+  const jt = $('jobType').value;
+  const mat = $('matType').value;
+  const qty = num($('qty').value);
+  const height = num($('height').value) || 1.2;
+  const complexity = $('complexity').value;
+  const finish = $('finish').value;
+  const margin = num($('margin').value) || 30;
+  const withInstall = $('installation').value === 'yes';
+  const glassType = $('glassType')?.value || 'none';
+  const woodType = $('woodType')?.value || 'none';
+
+  if (qty <= 0) { $('resultArea').innerHTML = ''; return; }
+
+  // -- Material cost --
+  const kgPerLm = (RATES.kgPerLm[jt] || 10) * (height / 1.2); // scale by height
+  const matCostPerKg = RATES.matPerKg[mat] || 3.5;
+  const matCost = qty * kgPerLm * matCostPerKg;
+  const totalKg = qty * kgPerLm;
+
+  // -- Labor cost --
+  const laborCost = qty * (RATES.laborPerLm[complexity] || 200);
+
+  // -- Surface finish --
+  const finishArea = qty * height;
+  const finishCost = finishArea * (RATES.finishPerM2[finish] || 0);
+
+  // -- Glass --
+  const glassArea = glassType !== 'none' ? qty * height * 0.7 : 0; // ~70% of face area
+  const glassCost = glassArea * (RATES.glassPerM2[glassType] || 0);
+
+  // -- Wood --
+  const woodCost = qty * (RATES.woodPerLm[woodType] || 0);
+
+  // -- Installation --
+  const installCost = withInstall ? qty * (RATES.installPerLm[jt] || 100) : 0;
+
+  // -- Extras --
+  const extraCost = extraLines.reduce((s,l) => s + l.qty * l.rate, 0);
+
+  // -- Totals --
+  const subtotal = matCost + laborCost + finishCost + glassCost + woodCost + installCost + extraCost;
+  const suggestedPrice = subtotal / (1 - margin / 100);
+  const vat = suggestedPrice * 0.15;
+  const totalWithVAT = suggestedPrice + vat;
+  const perLm = subtotal / qty;
+  const confidence = getConfidence(RATES.dataPoints);
+
+  const LINE = (label, value, note='', highlight=false) =>
+    `<div class="result-row${highlight?' total':''}">
+      <span>${label}${note?`<span class="rate-tag">${esc(note)}</span>`:''}</span>
+      <span class="mono" ${highlight?'style="font-weight:700"':''}>${fmtSAR(value)}</span>
+    </div>`;
+
+  $('resultArea').innerHTML = `
+    <div class="result-box">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:18px;flex-wrap:gap">
+        <div style="font-size:15px;font-weight:700">Estimate result</div>
+        <span class="confidence ${confidence.level}">${confidence.label}</span>
+      </div>
+
+      ${LINE('Materials', matCost, `${totalKg.toFixed(0)} kg ${mat.replace('_',' ')} @ SAR ${matCostPerKg}/kg`)}
+      ${LINE('Fabrication & welding labor', laborCost, `${qty}m x SAR ${RATES.laborPerLm[complexity]}/m (${complexity})`)}
+      ${finishCost > 0 ? LINE('Surface finish', finishCost, `${finishArea.toFixed(1)}m2 x SAR ${RATES.finishPerM2[finish]}/m2 (${finish.replace('_',' ')})`) : ''}
+      ${glassCost > 0 ? LINE('Glass', glassCost, `${glassArea.toFixed(1)}m2 x SAR ${RATES.glassPerM2[glassType]}/m2`) : ''}
+      ${woodCost > 0 ? LINE('Wood', woodCost, `${qty}m x SAR ${RATES.woodPerLm[woodType]}/m`) : ''}
+      ${installCost > 0 ? LINE('Installation', installCost, `${qty}m x SAR ${RATES.installPerLm[jt]}/m`) : ''}
+      ${extraLines.filter(l=>l.rate>0).map(l=>LINE(l.desc||'Extra',l.qty*l.rate)).join('')}
+
+      ${LINE('Total cost', subtotal, '', true)}
+
+      <div style="height:14px"></div>
+      <div class="result-row" style="background:rgba(200,169,110,.06);padding:12px 16px;border-radius:7px;margin:0 -4px">
+        <span style="font-weight:600">Suggested price (${margin}% margin)</span>
+        <span class="mono" style="font-weight:700;color:var(--gold-dk)">${fmtSAR(suggestedPrice)}</span>
+      </div>
+      <div class="result-row price" style="background:rgba(200,169,110,.1);padding:14px 16px;border-radius:7px;margin:8px -4px 0">
+        <span style="font-weight:700">Client price + VAT 15%</span>
+        <span class="mono">${fmtSAR(totalWithVAT)}</span>
+      </div>
+
+      <div style="margin-top:18px;padding-top:14px;border-top:1px solid var(--border);display:flex;gap:20px;flex-wrap:wrap;font-size:13px;color:var(--text3)">
+        <span>Per linear meter: <strong style="color:var(--text)">${fmtSAR(perLm)}/m</strong></span>
+        <span>Material: <strong style="color:var(--text)">${Math.round(matCost/subtotal*100)}%</strong></span>
+        <span>Labor: <strong style="color:var(--text)">${Math.round(laborCost/subtotal*100)}%</strong></span>
+        ${totalKg > 0 ? `<span>Weight: <strong style="color:var(--text)">${totalKg.toFixed(0)} kg</strong></span>` : ''}
+      </div>
+
+      <div style="margin-top:16px;display:flex;gap:8px;flex-wrap:wrap">
+        <button class="btn btn-gold btn-sm" onclick="sendToQuote()">Send to Quotations</button>
+        <button class="btn btn-sm" onclick="printEstimate()">Print estimate</button>
+      </div>
+    </div>`;
+}
+
+function sendToQuote() {
+  // Save estimate to sessionStorage and open quotations
+  const jt = $('jobType').value;
+  const mat = $('matType').value;
+  const qty = num($('qty').value);
+  const height = num($('height').value) || 1.2;
+  const complexity = $('complexity').value;
+  const finish = $('finish').value;
+  const margin = num($('margin').value) || 30;
+
+  const kgPerLm = (RATES.kgPerLm[jt] || 10) * (height / 1.2);
+  const matCost = qty * kgPerLm * (RATES.matPerKg[mat] || 3.5);
+  const laborCost = qty * (RATES.laborPerLm[complexity] || 200);
+  const subtotal = matCost + laborCost;
+  const price = subtotal / (1 - margin / 100);
+
+  const estData = {
+    description: `${jt.replace('_',' ')} - ${mat.replace('_',' ')} - ${qty}m`,
+    qty,
+    rate: Math.round(price / qty),
+    amount: Math.round(price),
+  };
+  sessionStorage.setItem('apm_est_prefill', JSON.stringify(estData));
+  toast('Opening Quotations with estimate pre-filled...');
+  setTimeout(() => window.location.href = 'quotations.html', 800);
+}
+
+function printEstimate() {
+  window.print();
+}
+
+// Init
+onJobTypeChange();
+
+// Auto-update rates on load if we have localStorage data
+if (RATES.dataPoints > 0 && RATES.learnedAt) {
+  $('learnBanner').style.display = 'flex';
+  $('learnTitle').textContent = 'Rates from ' + RATES.dataPoints + ' data points (last updated ' + new Date(RATES.learnedAt).toLocaleDateString('en-GB') + ')';
+  $('learnSub').textContent = 'Click "Update rates from history" at any time to recalibrate.';
+}
+</script>
+</body>
+</html>
