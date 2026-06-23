@@ -1,0 +1,469 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>APM Metal Works &mdash; Dashboard</title>
+<style>
+:root {
+  --gold: #C8A96E; --gold-dk: #A8874E; --black: #0A0A0A;
+  --bg: #FFFFFF; --bg1: #F5F5F5; --bg2: #EBEBEB;
+  --border: #D8D8D8; --text: #0A0A0A; --text2: #444444; --text3: #888888;
+  --shadow: rgba(0,0,0,.07);
+}
+[data-theme="dark"] {
+  --bg: #0A0A0A; --bg1: #141414; --bg2: #1E1E1E;
+  --border: #2A2A2A; --text: #F0F0F0; --text2: #AAAAAA; --text3: #666666;
+  --shadow: rgba(0,0,0,.35);
+}
+*, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+body {
+  background: var(--bg); color: var(--text);
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  min-height: 100vh; -webkit-font-smoothing: antialiased; transition: background .2s, color .2s;
+}
+button { font-family: inherit; cursor: pointer; }
+
+/* topbar */
+.topbar {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 0 28px; height: 56px;
+  border-bottom: 1px solid var(--border); background: var(--bg);
+  position: sticky; top: 0; z-index: 40;
+}
+.brand { display: flex; align-items: center; gap: 10px; }
+.mark { width: 30px; height: 30px; border-radius: 6px; background: var(--gold); display: grid; place-items: center; font-size: 13px; font-weight: 800; color: var(--black); }
+.brand-name { font-size: 14px; font-weight: 700; letter-spacing: -.01em; }
+.topbar-right { display: flex; align-items: center; gap: 10px; }
+.theme-btn {
+  width: 32px; height: 32px; border-radius: 6px; background: transparent;
+  border: 1px solid var(--border); color: var(--text2); font-size: 13px;
+  display: grid; place-items: center; transition: border-color .15s;
+}
+.theme-btn:hover { border-color: var(--gold); }
+.signout-btn {
+  padding: 6px 14px; border-radius: 6px; border: 1px solid var(--border);
+  background: transparent; color: var(--text3); font-size: 13px; font-weight: 500;
+  transition: border-color .15s, color .15s;
+}
+.signout-btn:hover { border-color: var(--gold); color: var(--text); }
+
+/* main */
+.wrap { max-width: 1100px; margin: 0 auto; padding: 40px 28px; }
+.page-head { margin-bottom: 32px; }
+.page-head h1 { font-size: 22px; font-weight: 700; letter-spacing: -.02em; }
+.page-head p { color: var(--text3); font-size: 14px; margin-top: 4px; }
+
+/* grid */
+.grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 1px;
+  background: var(--border);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  overflow: hidden;
+}
+@media(max-width: 780px) { .grid { grid-template-columns: repeat(2,1fr); } }
+@media(max-width: 500px) { .grid { grid-template-columns: 1fr; } }
+
+.module-card {
+  background: var(--bg); padding: 28px 24px;
+  text-decoration: none; color: var(--text);
+  display: flex; flex-direction: column; gap: 8px;
+  transition: background .15s;
+  position: relative;
+}
+.module-card:hover { background: var(--bg1); }
+.module-card::after {
+  content: ''; position: absolute; bottom: 0; left: 24px; right: 24px;
+  height: 2px; background: var(--gold); transform: scaleX(0);
+  transform-origin: left; transition: transform .2s ease;
+}
+.module-card:hover::after { transform: scaleX(1); }
+.module-card:focus-visible { outline: 2px solid var(--gold); outline-offset: -2px; }
+
+.card-label {
+  font-size: 11px; font-weight: 600; letter-spacing: .12em;
+  text-transform: uppercase; color: var(--gold-dk); margin-bottom: 2px;
+}
+.card-name { font-size: 17px; font-weight: 700; letter-spacing: -.01em; }
+.card-desc { font-size: 13px; color: var(--text3); line-height: 1.55; }
+.card-arrow { font-size: 16px; color: var(--border); margin-top: auto; padding-top: 12px; transition: color .15s; }
+.module-card:hover .card-arrow { color: var(--gold); }
+
+/* locked state */
+.module-card.locked { opacity: .5; pointer-events: none; }
+
+/* module login modal */
+.overlay { position: fixed; inset: 0; background: rgba(0,0,0,.5); display: none; align-items: center; justify-content: center; z-index: 60; padding: 16px; }
+.overlay.open { display: flex; }
+.modal {
+  background: var(--bg); border: 1px solid var(--border); border-radius: 10px;
+  padding: 28px; width: 100%; max-width: 360px;
+  box-shadow: 0 8px 32px var(--shadow);
+}
+.modal h2 { font-size: 16px; font-weight: 700; margin-bottom: 4px; }
+.modal .msub { font-size: 13px; color: var(--text3); margin-bottom: 22px; }
+.field label { display: block; font-size: 11.5px; font-weight: 600; letter-spacing: .08em; text-transform: uppercase; color: var(--text3); margin-bottom: 7px; }
+.field input { width: 100%; padding: 10px 12px; border: 1px solid var(--border); border-radius: 6px; background: var(--bg1); color: var(--text); font-size: 14px; font-family: inherit; }
+.field input:focus { outline: none; border-color: var(--gold); }
+.field input.err { border-color: #C0392B; }
+.field { margin-bottom: 14px; }
+.merr { display: none; font-size: 12.5px; color: #C0392B; margin-bottom: 12px; }
+.merr.show { display: block; }
+.modal-foot { display: flex; gap: 8px; justify-content: flex-end; margin-top: 20px; }
+.btn {
+  padding: 8px 16px; border-radius: 6px; font-size: 13.5px; font-weight: 600;
+  border: 1px solid var(--border); background: var(--bg1); color: var(--text); cursor: pointer;
+  transition: border-color .15s;
+}
+.btn:hover { border-color: var(--gold); }
+.btn-gold { background: var(--gold); border-color: var(--gold); color: var(--black); }
+.btn-gold:hover { background: var(--gold-dk); border-color: var(--gold-dk); }
+.attn-wrap{margin-bottom:28px}
+.attn-head{font-size:11px;font-weight:600;letter-spacing:.1em;text-transform:uppercase;color:var(--text3);margin-bottom:12px}
+.attn-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:12px}
+.attn-card{display:flex;align-items:flex-start;gap:12px;padding:14px 16px;border:1px solid var(--border);border-radius:9px;background:var(--bg);text-decoration:none;color:var(--text);transition:border-color .15s}
+.attn-card:hover{border-color:var(--gold)}
+.attn-card.urgent{border-color:#C0392B44;background:rgba(192,57,43,.03)}
+.attn-icon{width:34px;height:34px;border-radius:8px;display:grid;place-items:center;flex:none;font-size:16px}
+.attn-icon.red{background:#C0392B18;color:#C0392B}
+.attn-icon.gold{background:#C8A96E22;color:#A8874E}
+.attn-body{flex:1;min-width:0}
+.attn-title{font-size:13.5px;font-weight:700;margin-bottom:2px}
+.attn-sub{font-size:12px;color:var(--text3)}
+.attn-empty{padding:18px 20px;border:1px solid var(--border);border-radius:9px;font-size:13.5px;color:var(--text3);background:var(--bg)}
+</style>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+</head>
+<body>
+
+<header class="topbar">
+  <div class="brand">
+    <div class="mark">AP</div>
+    <span class="brand-name">APM Metal Works</span>
+  </div>
+  <div class="topbar-right">
+    <button class="theme-btn" onclick="toggleTheme()" title="Toggle theme">
+      <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6">
+        <circle cx="8" cy="8" r="3"/>
+        <path d="M8 1v1.5M8 13.5V15M1 8h1.5M13.5 8H15M3.05 3.05l1.06 1.06M11.89 11.89l1.06 1.06M3.05 12.95l1.06-1.06M11.89 4.11l1.06-1.06"/>
+      </svg>
+    </button>
+    <a href="admin.html" class="btn btn-sm" style="font-size:12.5px">Admin</a>
+    <button class="signout-btn" onclick="signOut()">Sign out</button>
+  </div>
+</header>
+
+<main class="wrap">
+  <div class="page-head">
+    <h1>Dashboard</h1>
+    <p>Select a module to continue.</p>
+  </div>
+
+  <div id="attentionPanel"></div>
+
+  <div class="grid">
+    <a class="module-card" data-module="crm" data-href="crm.html" href="#" onclick="openModule(event,'crm','crm.html','CRM')">
+      <div class="card-label">Module 01</div>
+      <div class="card-name">CRM <span style="font-size:12px;font-weight:500;color:var(--text3)">(Client Relationship Management)</span></div>
+      <div class="card-desc">Contacts, leads and pipeline management.</div>
+      <div class="card-arrow">&#8594;</div>
+    </a>
+
+    <a class="module-card" data-module="quotations" data-href="quotations.html" href="#" onclick="openModule(event,'quotations','quotations.html','Quotations')">
+      <div class="card-label">Module 02</div>
+      <div class="card-name">Quotations</div>
+      <div class="card-desc">Build and send quotes with VAT line items.</div>
+      <div class="card-arrow">&#8594;</div>
+    </a>
+
+    <a class="module-card" data-module="invoicing" data-href="invoicing.html" href="#" onclick="openModule(event,'invoicing','invoicing.html','Invoicing')">
+      <div class="card-label">Module 03</div>
+      <div class="card-name">Invoicing</div>
+      <div class="card-desc">VAT invoices from quotes, payment tracking.</div>
+      <div class="card-arrow">&#8594;</div>
+    </a>
+
+    <a class="module-card" data-module="inventory" data-href="inventory.html" href="#" onclick="openModule(event,'inventory','inventory.html','Inventory')">
+      <div class="card-label">Module 04</div>
+      <div class="card-name">Inventory</div>
+      <div class="card-desc">Stock levels, movement history, reorder alerts, material certificates.</div>
+      <div class="card-arrow">&#8594;</div>
+    </a>
+
+    <a class="module-card" data-module="hr" data-href="hr.html" href="#" onclick="openModule(event,'hr','hr.html','HR')">
+      <div class="card-label">Module 05</div>
+      <div class="card-name">HR <span style="font-size:12px;font-weight:500;color:var(--text3)">(Human Resources)</span></div>
+      <div class="card-desc">Employee records, payroll and leave approvals.</div>
+      <div class="card-arrow">&#8594;</div>
+    </a>
+
+    <a class="module-card" data-module="costmanager" data-href="cost-manager.html" href="#" onclick="openModule(event,'costmanager','cost-manager.html','Cost Manager',false)">
+      <div class="card-label">Module 06</div>
+      <div class="card-name">Cost Manager</div>
+      <div class="card-desc">BOQ, purchases, payroll, approvals and exports.</div>
+      <div class="card-arrow">&#8594;</div>
+    </a>
+    <a class="module-card" data-module="po" data-href="purchase-orders.html" href="#" onclick="openModule(event,'po','purchase-orders.html','Purchase Orders',false)">
+      <div class="card-label">Module 07</div>
+      <div class="card-name">Purchase Orders <span style="font-size:12px;font-weight:500;color:var(--text3)">(PO)</span></div>
+      <div class="card-desc">POs, RFQ to suppliers, and subcontractor/outside-processing tracking.</div>
+      <div class="card-arrow">&#8594;</div>
+    </a>
+    <a class="module-card" data-module="reporting" data-href="reporting.html" href="#" onclick="openModule(event,'reporting','reporting.html','Reporting',false)">
+      <div class="card-label">Module 08</div>
+      <div class="card-name">Reporting</div>
+      <div class="card-desc">Cross-module analytics: revenue, costs, HR, CRM and inventory.</div>
+      <div class="card-arrow">&#8594;</div>
+    </a>
+    <a class="module-card" data-module="scanner" data-href="scanner.html" href="#" onclick="openModule(event,'scanner','scanner.html','Document Scanner',false)">
+      <div class="card-label">Module 09</div>
+      <div class="card-name">Document Scanner</div>
+      <div class="card-desc">Attach a photo or file and file it directly into any module.</div>
+      <div class="card-arrow">&#8594;</div>
+    </a>
+    <a class="module-card" data-module="workorders" data-href="work-orders.html" href="#" onclick="openModule(event,'workorders','work-orders.html','Work Orders',false)">
+      <div class="card-label">Module 10</div>
+      <div class="card-name">Work Orders</div>
+      <div class="card-desc">Track production jobs from start to finish with per-task job cards.</div>
+      <div class="card-arrow">&#8594;</div>
+    </a>
+    <a class="module-card" data-module="quality" data-href="quality.html" href="#" onclick="openModule(event,'quality','quality.html','Quality Inspection',false)">
+      <div class="card-label">Module 11</div>
+      <div class="card-name">Quality Inspection</div>
+      <div class="card-desc">Incoming steel checks, in-process QC, and outgoing product sign-off.</div>
+      <div class="card-arrow">&#8594;</div>
+    </a>
+    <a class="module-card" data-module="estimator" data-href="estimator.html" href="#" onclick="openModule(event,'estimator','estimator.html','AI Estimator',false)">
+      <div class="card-label">Module 12</div>
+      <div class="card-name">AI Estimator</div>
+      <div class="card-desc">Smart cost estimates based on real market rates and your own history.</div>
+      <div class="card-arrow">&#8594;</div>
+    </a>
+    <a class="module-card" data-module="scheduling" data-href="scheduling.html" href="#" onclick="openModule(event,'scheduling','scheduling.html','Production Scheduling',false)">
+      <div class="card-label">Module 13</div>
+      <div class="card-name">Production Scheduling</div>
+      <div class="card-desc">Plan jobs across workstations, manage capacity, avoid overbooking the shop.</div>
+      <div class="card-arrow">&#8594;</div>
+    </a>
+    <a class="module-card" data-module="delivery" data-href="delivery.html" href="#" onclick="openModule(event,'delivery','delivery.html','Delivery Notes',false)">
+      <div class="card-label">Module 14</div>
+      <div class="card-name">Delivery Notes</div>
+      <div class="card-desc">Delivery notes, gate passes, driver and vehicle tracking for shipments.</div>
+      <div class="card-arrow">&#8594;</div>
+    </a>
+  </div>
+</main>
+
+<!-- Module password modal -->
+
+
+<script>
+// -- Per-module passwords ------------------------------------------------
+// ------------------------------------------------------------------------
+
+const SESSION_KEY = 'apm_auth';
+const TTL = 10 * 60 * 60 * 1000;
+
+// Theme
+const savedTheme = localStorage.getItem('apm_theme') || 'light';
+document.documentElement.setAttribute('data-theme', savedTheme);
+function toggleTheme() {
+  const next = document.documentElement.getAttribute('data-theme') === 'dark' ? 'light' : 'dark';
+  document.documentElement.setAttribute('data-theme', next);
+  localStorage.setItem('apm_theme', next);
+}
+
+// Guard dashboard itself
+try {
+  const s = JSON.parse(sessionStorage.getItem(SESSION_KEY));
+  if (!s || Date.now() - s.ts > TTL) throw 0;
+} catch(e) { location.replace('login.html'); }
+
+function signOut() {
+  sessionStorage.clear();
+  location.replace('login.html');
+}
+
+// Module unlock
+
+
+function openModule(e, id, href, label, external) {
+  e.preventDefault();
+  navigate(href, external);
+}
+
+
+function navigate(href, external) {
+  // Navigate in the same tab &mdash; window.open gets blocked by popup blockers,
+  // which is why the Cost Manager appeared to do nothing.
+  location.href = href;
+}
+
+function closeModal() {
+  document.getElementById('overlay').classList.remove('open');
+  pending = null;
+}
+
+// -- Attention panel ----------------------------------------------
+const SB_URL='https://spfztpokbpomqtiqgggz.supabase.co';
+const SB_KEY='sb_publishable_xPXU0xL_YaiWA6k9PWc0Xg_4QYeypNi';
+// Initialize with stored auth session so RLS blocks unauthenticated access
+const _sess=JSON.parse(sessionStorage.getItem('apm_auth')||'{}');
+const sb=supabase.createClient(SB_URL,SB_KEY,{
+  global:{headers:{Authorization:'Bearer '+(_sess.access_token||SB_KEY)}},
+  auth:{persistSession:false,autoRefreshToken:false}
+});
+const esc=s=>(s??'').toString().replaceAll('&','&amp;').replaceAll('<','&lt;').replaceAll('>','&gt;');
+const fmtSAR=n=>'SAR '+Number(n||0).toLocaleString('en-US',{maximumFractionDigits:0});
+
+async function loadAttention(){
+  const today=new Date();
+  const soon=new Date();soon.setDate(today.getDate()+30);
+  const todayStr=today.toISOString().slice(0,10);
+
+  const[empR,invR,stockR]=await Promise.all([
+    sb.from('employees').select('name,status,iqama_expiry,permit_expiry'),
+    sb.from('invoices').select('invoice_no,client_name,total,due_date,payments'),
+    sb.from('inventory').select('name,qty,reorder_level'),
+  ]);
+
+  // Overdue or urgent work orders
+  const woR=await sb.from('apm_work_orders').select('wo_no,title,priority,planned_end,status').not('status','in',['completed','cancelled']);
+  (woR.data||[]).forEach(wo=>{
+    const overdue=wo.planned_end&&wo.planned_end<todayStr;
+    if(wo.priority==='urgent'||overdue){
+      items.push({
+        urgent:overdue||wo.priority==='urgent',
+        icon:'&#128295;',
+        title:(overdue?'Overdue WO -- ':'Urgent WO -- ')+esc(wo.title),
+        sub:wo.wo_no+(wo.planned_end?' -- due '+new Date(wo.planned_end).toLocaleDateString('en-GB'):''),
+        href:'work-orders.html'
+      });
+    }
+  });
+
+  const items=[];
+
+  // Document expiry (HR)
+  (empR.data||[]).filter(e=>e.status==='active').forEach(e=>{
+    [['Iqama',e.iqama_expiry],['Work permit',e.permit_expiry]].forEach(([doc,date])=>{
+      if(!date)return;
+      const d=new Date(date);
+      if(d<=soon){
+        items.push({
+          urgent:d<today,
+          icon:'&#128196;',
+          title:(d<today?doc+' expired':doc+' expiring')+' -- '+e.name,
+          sub:(d<today?'Expired':'Expires')+' '+d.toLocaleDateString('en-GB',{day:'numeric',month:'short',year:'numeric'}),
+          href:'hr.html'
+        });
+      }
+    });
+  });
+
+  // Overdue invoices (Invoicing)
+  (invR.data||[]).forEach(inv=>{
+    const paid=(inv.payments||[]).reduce((s,p)=>s+Number(p.amount||0),0);
+    const bal=Number(inv.total||0)-paid;
+    if(bal<=0.01)return;
+    if(inv.due_date&&inv.due_date<todayStr){
+      const daysOver=Math.floor((today-new Date(inv.due_date))/86400000);
+      items.push({
+        urgent:daysOver>60,
+        icon:'&#128181;',
+        title:'Invoice '+(inv.invoice_no||'')+' overdue -- '+(inv.client_name||''),
+        sub:daysOver+' days overdue, '+fmtSAR(bal)+' outstanding',
+        href:'invoicing.html'
+      });
+    }
+  });
+
+  // Low stock (Inventory)
+  (stockR.data||[]).forEach(i=>{
+    if(Number(i.reorder_level||0)>0&&Number(i.qty||0)<=Number(i.reorder_level)){
+      items.push({
+        urgent:Number(i.qty||0)===0,
+        icon:'&#128230;',
+        title:(Number(i.qty)===0?'Out of stock -- ':'Low stock -- ')+i.name,
+        sub:Number(i.qty||0)+' remaining, reorder at '+i.reorder_level,
+        href:'inventory.html'
+      });
+    }
+  });
+
+  // Quality fails
+  const qiR=await sb.from('apm_quality_inspections').select('qi_no,overall,reference,type').eq('overall','fail');
+  (qiR.data||[]).forEach(qi=>{
+    items.push({
+      urgent:true,
+      icon:'&#9888;',
+      title:'Quality fail -- '+esc(qi.reference||'--'),
+      sub:(qi.type==='incoming'?'Incoming':qi.type==='outgoing'?'Outgoing':'In-process')+' inspection '+esc(qi.qi_no||''),
+      href:'quality.html'
+    });
+  });
+
+  // Pending deliveries past their date
+  const dnR=await sb.from('apm_delivery_notes').select('dn_no,client_name,delivery_date,status').in('status',['pending','dispatched']);
+  (dnR.data||[]).forEach(dn=>{
+    if(dn.delivery_date&&dn.delivery_date<todayStr){
+      items.push({
+        urgent:true,
+        icon:'&#128666;',
+        title:'Delivery overdue -- '+esc(dn.client_name||'--'),
+        sub:esc(dn.dn_no||'')+' was due '+new Date(dn.delivery_date).toLocaleDateString('en-GB'),
+        href:'delivery.html'
+      });
+    }
+  });
+
+  // Delayed scheduled jobs
+  const schR=await sb.from('apm_schedule').select('title,scheduled_date,status').eq('status','delayed');
+  (schR.data||[]).forEach(s=>{
+    items.push({
+      urgent:true,
+      icon:'&#9203;',
+      title:'Delayed job -- '+esc(s.title||'--'),
+      sub:'Scheduled '+(s.scheduled_date?new Date(s.scheduled_date).toLocaleDateString('en-GB'):''),
+      href:'scheduling.html'
+    });
+  });
+
+  const panel=document.getElementById('attentionPanel');
+  if(!panel)return;
+  if(!items.length){panel.innerHTML='';return;}
+
+  items.sort((a,b)=>(b.urgent?1:0)-(a.urgent?1:0));
+  const cards=items.map(it=>`<a class="attn-card${it.urgent?' urgent':''}" href="${it.href}">
+    <div class="attn-icon ${it.urgent?'red':'gold'}">${it.icon}</div>
+    <div class="attn-body">
+      <div class="attn-title">${esc(it.title)}</div>
+      <div class="attn-sub">${esc(it.sub)}</div>
+    </div>
+  </a>`).join('');
+
+  panel.innerHTML=`<div class="attn-wrap">
+    <div class="attn-head">Needs attention (${items.length})</div>
+    <div class="attn-grid">${cards}</div>
+  </div>`;
+}
+loadAttention();
+</script>
+
+<!-- Security watermark - shows user name on every page -->
+<div id="secWatermark" style="position:fixed;bottom:12px;left:16px;font-size:11px;color:var(--text3,#888);opacity:0.4;pointer-events:none;user-select:none;z-index:1000;font-family:monospace"></div>
+<script>
+(function(){
+  var s=JSON.parse(sessionStorage.getItem('apm_auth')||'{}');
+  var el=document.getElementById('secWatermark');
+  if(el&&s.user){
+    var now=new Date();
+    el.textContent=s.user+' - '+now.toLocaleDateString('en-GB')+' '+now.toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit'});
+  }
+})();
+</script>
+</body>
+</html>

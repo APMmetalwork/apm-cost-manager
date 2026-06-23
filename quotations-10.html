@@ -1,0 +1,882 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Quotations -- APM Metal Works</title>
+<script>
+(function(){
+  var K='apm_auth',T=10*60*60*1000;
+  try{var s=JSON.parse(sessionStorage.getItem(K));if(!s||Date.now()-s.ts>T)throw 0;}
+  catch(e){window.location.href='login.html';return;}
+  document.addEventListener('DOMContentLoaded',function(){
+    document.body.style.display='none';
+    var gate=document.createElement('div');gate.id='mod-gate';
+    gate.innerHTML='<style>'
+      +'#mod-gate{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;'
+      +'background:var(--bg,#fff);z-index:9999;font-family:inherit}'
+      +'#mod-gate .gc{width:100%;max-width:360px;padding:24px;border:1px solid var(--border,#d8d8d8);'
+      +'border-radius:10px;box-shadow:0 4px 20px rgba(0,0,0,.08)}'
+      +'#mod-gate h2{font-size:17px;font-weight:700;margin-bottom:4px}'
+      +'#mod-gate p{font-size:13px;color:var(--text3,#888);margin-bottom:20px}'
+      +'#mod-gate label{display:block;font-size:11px;font-weight:600;letter-spacing:.08em;'
+      +'text-transform:uppercase;color:var(--text3,#888);margin-bottom:7px}'
+      +'#mod-gate input{width:100%;padding:11px 13px;border:1px solid var(--border,#d8d8d8);'
+      +'border-radius:6px;background:var(--bg1,#f5f5f5);color:var(--text,#0a0a0a);'
+      +'font-size:14px;font-family:inherit;box-sizing:border-box}'
+      +'#mod-gate input:focus{outline:none;border-color:#C8A96E}'
+      +'#mod-gate input.err{border-color:#C0392B}'
+      +'#mod-gate .errmsg{display:none;color:#C0392B;font-size:12.5px;margin-top:8px}'
+      +'#mod-gate .errmsg.show{display:block}'
+      +'#mod-gate button{width:100%;margin-top:14px;padding:11px;background:#C8A96E;'
+      +'border:none;border-radius:6px;color:#0a0a0a;font-size:14px;font-weight:700;cursor:pointer}'
+      +'#mod-gate button:hover{background:#A8874E}'
+      +'#mod-gate button:disabled{opacity:.6;cursor:not-allowed}'
+      +'</style>'
+      +'<div class="gc"><h2>Quotations</h2>'
+      +'<p>Enter the module password to continue.</p>'
+      +'<label>Password</label>'
+      +'<input id="mgpw" type="password" placeholder="Password" />'
+      +'<div class="errmsg" id="mgerr">Incorrect password.</div>'
+      +'<button id="mgbtn" onclick="mgCheck()">Open</button></div>';
+    document.body.parentNode.insertBefore(gate,document.body);
+    document.getElementById('mgpw').addEventListener('keydown',function(e){
+      if(e.key==='Enter'){e.preventDefault();mgCheck();}
+    });
+    document.getElementById('mgpw').addEventListener('input',function(){
+      document.getElementById('mgerr').classList.remove('show');
+      document.getElementById('mgpw').classList.remove('err');
+    });
+    setTimeout(function(){document.getElementById('mgpw').focus();},80);
+  });
+  window.mgCheck=function(){
+    var pw=document.getElementById('mgpw').value;
+    var btn=document.getElementById('mgbtn');
+    btn.disabled=true;btn.textContent='Checking...';
+    fetch('https://spfztpokbpomqtiqgggz.supabase.co/rest/v1/apm_settings?key=eq.mod_pass_quotations&select=value',{
+      headers:{'apikey':'sb_publishable_xPXU0xL_YaiWA6k9PWc0Xg_4QYeypNi','Authorization':'Bearer sb_publishable_xPXU0xL_YaiWA6k9PWc0Xg_4QYeypNi'}
+    })
+    .then(function(r){return r.json();})
+    .then(function(d){
+      var correct=d&&d[0]&&d[0].value;
+      if(correct&&pw===correct){
+        document.getElementById('mod-gate').remove();
+        document.body.style.display='';
+      }else{
+        document.getElementById('mgerr').classList.add('show');
+        document.getElementById('mgpw').classList.add('err');
+        document.getElementById('mgpw').value='';
+        document.getElementById('mgpw').focus();
+        btn.disabled=false;btn.textContent='Open';
+      }
+    })
+    .catch(function(){
+      document.getElementById('mgerr').textContent='Could not connect. Check your internet.';
+      document.getElementById('mgerr').classList.add('show');
+      btn.disabled=false;btn.textContent='Open';
+    });
+  };
+})();
+(function(){var t=localStorage.getItem('apm_theme')||'light';document.documentElement.setAttribute('data-theme',t);})();
+</script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="apm-security.js"></script>
+
+<style>
+:root{--gold:#C8A96E;--gold-dk:#A8874E;--black:#0A0A0A;--bg:#FFFFFF;--bg1:#F5F5F5;--bg2:#EBEBEB;--border:#D8D8D8;--text:#0A0A0A;--text2:#444444;--text3:#888888;--shadow:rgba(0,0,0,.07)}
+[data-theme="dark"]{--bg:#0A0A0A;--bg1:#141414;--bg2:#1E1E1E;--border:#2A2A2A;--text:#F0F0F0;--text2:#AAAAAA;--text3:#666666;--shadow:rgba(0,0,0,.35)}
+*,*::before,*::after{margin:0;padding:0;box-sizing:border-box}
+body{background:var(--bg);color:var(--text);font-family:'Inter',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;min-height:100vh;-webkit-font-smoothing:antialiased;transition:background .2s,color .2s}
+button{font-family:inherit;cursor:pointer}
+.topbar{display:flex;align-items:center;justify-content:space-between;padding:0 28px;height:56px;border-bottom:1px solid var(--border);background:var(--bg);position:sticky;top:0;z-index:40}
+.topbar-left{display:flex;align-items:center;gap:16px}
+.brand-link{display:flex;align-items:center;gap:10px;text-decoration:none;color:var(--text)}
+.brand-mark{width:30px;height:30px;border-radius:6px;background:var(--gold);display:grid;place-items:center;font-size:13px;font-weight:800;color:var(--black);flex:none}
+.brand-name{font-size:14px;font-weight:700;letter-spacing:-.01em}
+.page-label{font-size:13.5px;color:var(--text3);padding-left:16px;border-left:1px solid var(--border)}
+.topbar-right{display:flex;align-items:center;gap:10px}
+.theme-btn{width:32px;height:32px;border-radius:6px;background:transparent;border:1px solid var(--border);color:var(--text2);display:grid;place-items:center;transition:border-color .15s}
+.theme-btn:hover{border-color:var(--gold)}
+.btn{display:inline-flex;align-items:center;gap:6px;padding:8px 16px;border-radius:6px;font-size:13.5px;font-weight:600;border:1px solid var(--border);background:var(--bg1);color:var(--text);cursor:pointer;transition:border-color .15s,background .15s}
+.btn:hover{border-color:var(--gold)}
+.btn-gold{background:var(--gold);border-color:var(--gold);color:var(--black)}
+.btn-gold:hover{background:var(--gold-dk);border-color:var(--gold-dk)}
+.btn-danger{color:#C0392B;border-color:#C0392B33}.btn-danger:hover{border-color:#C0392B}
+.btn-ghost{background:transparent;border-color:transparent}.btn-ghost:hover{border-color:var(--border)}
+.btn-sm{padding:6px 12px;font-size:12.5px}
+.btn:disabled{opacity:.45;cursor:not-allowed}
+.wrap{max-width:1200px;margin:0 auto;padding:28px}
+.stats-row{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));background:var(--border);border:1px solid var(--border);border-radius:8px;overflow:hidden;margin-bottom:24px}
+.stat-cell{background:var(--bg);padding:18px 22px;border-right:1px solid var(--border)}
+.stat-cell:last-child{border-right:none}
+.stat-lbl{font-size:11px;font-weight:600;letter-spacing:.1em;text-transform:uppercase;color:var(--text3);margin-bottom:6px}
+.stat-val{font-size:22px;font-weight:700;font-variant-numeric:tabular-nums}
+.stat-val.gold{color:var(--gold-dk)}
+.toolbar{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:18px}
+.search-input{padding:8px 12px;border:1px solid var(--border);border-radius:6px;background:var(--bg1);color:var(--text);font-size:13.5px;min-width:220px;flex:1;max-width:320px}
+.search-input:focus{outline:none;border-color:var(--gold)}
+.filter-tabs{display:flex;gap:2px;background:var(--bg1);border:1px solid var(--border);border-radius:6px;padding:3px}
+.ftab{background:transparent;border:none;color:var(--text3);padding:6px 14px;border-radius:4px;font-size:13px;font-weight:500;cursor:pointer}
+.ftab.active{background:var(--bg);color:var(--text);font-weight:600;box-shadow:0 1px 3px var(--shadow)}
+.tbl-wrap{border:1px solid var(--border);border-radius:8px;overflow:hidden}
+table{width:100%;border-collapse:collapse;font-size:13.5px}
+thead th{background:var(--bg1);padding:11px 16px;text-align:left;font-size:11px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--text3);border-bottom:1px solid var(--border);white-space:nowrap}
+tbody td{padding:13px 16px;border-bottom:1px solid var(--border);vertical-align:middle}
+tbody tr:last-child td{border-bottom:none}
+tbody tr.rc{cursor:pointer}tbody tr.rc:hover{background:var(--bg1)}
+.mono{font-variant-numeric:tabular-nums;font-size:13px}
+.dim{color:var(--text3);font-size:12.5px}
+.badge{display:inline-block;padding:3px 9px;border-radius:4px;font-size:11.5px;font-weight:600;border:1px solid}
+.empty{padding:52px 20px;text-align:center;color:var(--text3);font-size:14px}
+.empty strong{display:block;color:var(--text);margin-bottom:4px}
+/* editor */
+.editor{display:none}
+.editor.open{display:block}
+.ed-head{display:flex;align-items:center;justify-content:space-between;gap:14px;margin-bottom:24px;flex-wrap:wrap;border-bottom:1px solid var(--border);padding-bottom:20px}
+.ed-head h1{font-size:20px;font-weight:700}
+.ed-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:24px}
+@media(max-width:680px){.ed-grid{grid-template-columns:1fr}}
+/* line items */
+.li-head,.li-row{display:grid;grid-template-columns:1.1fr 2fr .7fr .8fr 1fr 1fr 32px;gap:8px;align-items:center}
+.li-head{padding:0 0 8px;color:var(--text3);font-size:11px;font-weight:600;letter-spacing:.07em;text-transform:uppercase;border-bottom:1px solid var(--border);margin-bottom:10px}
+.li-row{margin-bottom:8px}
+.li-row input,.li-row select{width:100%;background:var(--bg1);border:1px solid var(--border);border-radius:6px;color:var(--text);padding:8px 10px;font-size:13px;font-family:inherit}
+.li-row input:focus,.li-row select:focus{outline:none;border-color:var(--gold)}
+.li-row .amt-cell{background:var(--bg2);border-radius:6px;padding:8px 10px;font-size:13px;font-variant-numeric:tabular-nums;text-align:right;color:var(--text2)}
+.li-del{width:32px;height:34px;border-radius:5px;border:1px solid var(--border);background:transparent;color:var(--text3);cursor:pointer}
+.li-del:hover{border-color:#C0392B;color:#C0392B}
+@media(max-width:780px){.li-head{display:none}.li-row{grid-template-columns:1fr 1fr;gap:6px;border:1px solid var(--border);border-radius:8px;padding:12px;background:var(--bg1)}.li-row .li-del{grid-column:span 2}}
+.totals-box{margin-left:auto;max-width:320px;margin-top:20px;border:1px solid var(--border);border-radius:8px;overflow:hidden}
+.tot-row{display:flex;justify-content:space-between;align-items:center;padding:10px 16px;border-bottom:1px solid var(--border);font-size:14px}
+.tot-row:last-child{border-bottom:none;font-weight:700;font-size:16px;background:var(--bg1)}
+.tot-row .tv{font-variant-numeric:tabular-nums}
+.hint{color:var(--text3);font-size:12.5px;margin-top:8px}
+/* overlay */
+.overlay{position:fixed;inset:0;background:rgba(0,0,0,.45);display:none;align-items:flex-start;justify-content:center;z-index:60;padding:5vh 16px;overflow-y:auto}
+.overlay.open{display:flex}
+.modal{background:var(--bg);border:1px solid var(--border);border-radius:10px;width:100%;max-width:500px;padding:28px;box-shadow:0 8px 32px var(--shadow)}
+.modal h2{font-size:17px;font-weight:700;margin-bottom:20px}
+.field{margin-bottom:14px}
+.field label{display:block;font-size:11.5px;font-weight:600;letter-spacing:.07em;text-transform:uppercase;color:var(--text3);margin-bottom:6px}
+.field input,.field select,.field textarea{width:100%;background:var(--bg1);border:1px solid var(--border);border-radius:6px;color:var(--text);padding:9px 11px;font-size:14px}
+.field input:focus,.field select:focus,.field textarea:focus{outline:none;border-color:var(--gold)}
+.field input:disabled{opacity:.6}
+.f2{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+@media(max-width:520px){.f2{grid-template-columns:1fr}}
+.modal-foot{display:flex;gap:10px;justify-content:flex-end;margin-top:20px;border-top:1px solid var(--border);padding-top:20px}
+.mfl{margin-right:auto}
+#toasts{position:fixed;bottom:20px;right:20px;display:flex;flex-direction:column;gap:8px;z-index:90}
+.toast{background:var(--bg);border:1px solid var(--border);border-left:3px solid var(--gold);border-radius:7px;padding:11px 16px;font-size:13.5px;min-width:220px;box-shadow:0 4px 16px var(--shadow);animation:tin .2s ease}
+.toast.err{border-left-color:#C0392B}
+@keyframes tin{from{transform:translateX(12px);opacity:0}}
+.loading{padding:60px;text-align:center;color:var(--text3)}
+.est-tbl{width:100%;border-collapse:collapse;font-size:13px;margin-bottom:8px}
+.est-tbl th{background:var(--bg1);padding:7px 8px;text-align:left;font-size:11px;font-weight:600;text-transform:uppercase;color:var(--text3);border-bottom:1px solid var(--border)}
+.est-tbl td{padding:6px 5px;border-bottom:1px solid var(--border);vertical-align:middle}
+.est-tbl input{width:100%;background:var(--bg);border:1px solid var(--border);border-radius:5px;color:var(--text);padding:5px 7px;font-size:13px;font-family:inherit}
+.est-tbl input:focus{outline:none;border-color:var(--gold)}
+.sum-box{background:var(--bg1);border:1px solid var(--border);border-radius:7px;padding:14px 16px;margin-bottom:16px}
+</style>
+</head>
+<body>
+<header class="topbar">
+  <div class="topbar-left">
+    <a class="brand-link" href="dashboard.html"><div class="brand-mark">AP</div><span class="brand-name">APM Metal Works</span></a>
+    <span class="page-label">Quotations</span>
+  </div>
+  <div class="topbar-right">
+    <button class="theme-btn" onclick="toggleTheme()"><svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="8" cy="8" r="3"/><path d="M8 1v1.5M8 13.5V15M1 8h1.5M13.5 8H15M3.05 3.05l1.06 1.06M11.89 11.89l1.06 1.06M3.05 12.95l1.06-1.06M11.89 4.11l1.06-1.06"/></svg></button>
+    <button class="btn btn-sm" id="btnEst" onclick="showEst()" style="display:none">+ New estimation</button>
+    <button class="btn btn-gold btn-sm" id="btnQuote" onclick="newQuote()">+ New quote</button>
+  </div>
+</header>
+
+<div class="wrap">
+  <!-- LIST -->
+  <div id="listView">
+    <div class="tabs" style="display:flex;gap:2px;background:var(--bg1);border:1px solid var(--border);border-radius:6px;padding:3px;width:fit-content;margin-bottom:18px">
+      <button class="tab active" data-v="quotes" onclick="switchQView('quotes')" style="background:var(--bg);border:none;color:var(--text);padding:7px 18px;border-radius:4px;font-size:13.5px;font-weight:600;cursor:pointer">Quotes</button>
+      <button class="tab" data-v="estimations" onclick="switchQView('estimations')" style="background:transparent;border:none;color:var(--text3);padding:7px 18px;border-radius:4px;font-size:13.5px;font-weight:500;cursor:pointer">Estimations</button>
+    </div>
+    <div id="quotesView">
+    <div class="stats-row">
+      <div class="stat-cell"><div class="stat-lbl">Total quotes</div><div class="stat-val" id="stT">--</div></div>
+      <div class="stat-cell"><div class="stat-lbl">Sent / pending</div><div class="stat-val" id="stS">--</div></div>
+      <div class="stat-cell"><div class="stat-lbl">Accepted value</div><div class="stat-val gold" id="stA">--</div></div>
+      <div class="stat-cell"><div class="stat-lbl">Win rate</div><div class="stat-val gold" id="stW">--</div></div>
+    </div>
+    <div class="toolbar">
+      <input class="search-input" id="search" placeholder="Search quote, client, project..." oninput="renderList()">
+      <div class="filter-tabs">
+        <button class="ftab active" data-f="all" onclick="setF('all')">All</button>
+        <button class="ftab" data-f="draft" onclick="setF('draft')">Draft</button>
+        <button class="ftab" data-f="sent" onclick="setF('sent')">Sent</button>
+        <button class="ftab" data-f="accepted" onclick="setF('accepted')">Accepted</button>
+        <button class="ftab" data-f="rejected" onclick="setF('rejected')">Rejected</button>
+      </div>
+    </div>
+    <div id="listBody"><div class="loading">Loading...</div></div>
+    </div><!-- end quotesView inner -->
+
+    </div><!-- end quotesView -->
+    <div id="estimationsView" style="display:none"></div>
+  </div><!-- end listView -->
+
+  <!-- EDITOR -->
+  <div class="editor" id="editor">
+    <div class="ed-head">
+      <div>
+        <h1 id="edTitle">New quote</h1>
+        <div style="font-size:13px;color:var(--text3);margin-top:3px" id="edSub"></div>
+      </div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap">
+        <button class="btn btn-ghost btn-sm" onclick="closeEditor()">Back</button>
+        <button class="btn btn-sm" onclick="printQuote()">Print / PDF</button>
+        <button class="btn btn-gold btn-sm" id="saveBtn" onclick="saveQuote()">Save quote</button>
+      </div>
+    </div>
+    <div class="ed-grid">
+      <div class="field"><label>Quote number</label><input id="qNo" disabled></div>
+      <div class="field"><label>Status</label>
+        <select id="qStatus" onchange="onStatusChange()">
+          <option value="draft">Draft</option><option value="sent">Sent</option>
+          <option value="accepted">Accepted</option><option value="rejected">Rejected</option>
+        </select>
+      </div>
+      <div class="field" id="rejReasonWrap" style="display:none"><label>Rejection reason</label>
+        <select id="qRejReason">
+          <option value="">-- Select reason --</option>
+          <option value="price">Price too high</option>
+          <option value="quality">Quality concern</option>
+          <option value="timeline">Timeline issue</option>
+          <option value="competitor">Went with competitor</option>
+          <option value="cancelled">Project cancelled</option>
+          <option value="no_response">No response</option>
+          <option value="other">Other</option>
+        </select>
+      </div>
+      <div class="field"><label>Client name</label><input id="qClient" list="clist" placeholder="Al-Rajhi Construction"><datalist id="clist"></datalist></div>
+      <div class="field"><label>Project name</label><input id="qProject" placeholder="Warehouse mezzanine -- Phase 2"></div>
+      <div class="field"><label>Quote date</label><input id="qDate" type="date"></div>
+      <div class="field"><label>Validity</label>
+        <select id="qValidity"><option value="15">15 days</option><option value="30" selected>30 days</option><option value="45">45 days</option><option value="60">60 days</option></select>
+      </div>
+      <div class="field"><label>Deadline / delivery date</label><input id="qDeadline" type="date"></div>
+    </div>
+
+    <div style="font-size:13px;font-weight:600;letter-spacing:.05em;text-transform:uppercase;color:var(--text3);margin-bottom:12px">Line items</div>
+    <div class="li-head"><span>Type</span><span>Description</span><span>Qty</span><span>Unit</span><span>Rate (SAR)</span><span>Amount</span><span></span></div>
+    <div id="lineItems"></div>
+    <button class="btn btn-sm" style="margin-top:4px" onclick="addLine()">+ Add line</button>
+    <div class="hint">Railing: qty = linear meters, rate = SAR/m (e.g. 2000). Handles: qty = pieces, rate = SAR/piece. Wood/glass/metal handle types available.</div>
+
+    <div class="totals-box">
+      <div class="tot-row"><span>Subtotal</span><span class="tv" id="tSub">SAR 0.00</span></div>
+      <div class="tot-row"><span>VAT 15%</span><span class="tv" id="tVat">SAR 0.00</span></div>
+      <div class="tot-row"><span>Total</span><span class="tv" id="tTot">SAR 0.00</span></div>
+    </div>
+
+    <div class="f2">
+      <div class="field"><label>Payment terms</label>
+        <select id="qPayTerms">
+          <option value="">-- Select --</option>
+          <option>30% advance, 70% on delivery</option>
+          <option>50% advance, 50% on delivery</option>
+          <option>100% on delivery</option>
+          <option>30 days net</option>
+          <option>Cash on delivery</option>
+        </select>
+      </div>
+      <div class="field"><label>Sent via</label>
+        <select id="qSentVia">
+          <option value="whatsapp">WhatsApp</option>
+          <option value="email">Email</option>
+          <option value="in_person">In person</option>
+        </select>
+      </div>
+    </div>
+    <div class="f2">
+      <div class="field"><label>Delivery / site address</label><input id="qDelivAddr" placeholder="optional"></div>
+      <div class="field"><label>Warranty terms</label><input id="qWarranty" placeholder="e.g. 1 year structural warranty"></div>
+    </div>
+    <div class="field" style="margin-top:8px"><label>Notes / payment terms</label><textarea id="qNotes" rows="3" placeholder="Payment 50% advance, balance on delivery."></textarea></div>
+  </div>
+</div>
+
+<div id="toasts"></div>
+<script>
+const SB_URL='https://spfztpokbpomqtiqgggz.supabase.co';
+const SB_KEY='sb_publishable_xPXU0xL_YaiWA6k9PWc0Xg_4QYeypNi';
+// Initialize with stored auth session so RLS blocks unauthenticated access
+const _sess=JSON.parse(sessionStorage.getItem('apm_auth')||'{}');
+const sb=supabase.createClient(SB_URL,SB_KEY,{
+  global:{headers:{Authorization:'Bearer '+(_sess.access_token||SB_KEY)}},
+  auth:{persistSession:false,autoRefreshToken:false}
+});
+const VAT=0.15;
+const TYPES=[
+  {id:'fabrication',label:'Fabrication'},
+  {id:'installation',label:'Installation'},
+  {id:'material',label:'Material'},
+  {id:'labor',label:'Labor'},
+  {id:'railing',label:'Railing (linear meter)'},
+  {id:'handle_wood',label:'Handle - Wood'},
+  {id:'handle_glass',label:'Handle - Glass'},
+  {id:'handle_metal',label:'Handle - Metal'},
+  {id:'other',label:'Other'},
+];
+// Default rates per linear meter / unit
+const LM_RATES={railing:2000,handle_wood:1000,handle_glass:1000,handle_metal:1000};
+const STATUSES={draft:{label:'Draft',color:'#888888'},sent:{label:'Sent',color:'#C8A96E'},accepted:{label:'Accepted',color:'#2D7D46'},rejected:{label:'Rejected',color:'#C0392B'}};
+const COST_MANAGER={
+  table:'apm_projects',
+  map:rec=>({name:rec.project_name,client:rec.client_name,description:'Generated from quote '+rec.quote_no,status:'active',start_date:new Date().toISOString().slice(0,10),end_date:null,budget_purchases:rec.total,budget_payroll:0,budget_direct:0,budget_indirect:0,budget_goci:0,tier1_name:null,tier1_max:null,tier2_name:null,tier2_max:null,tier3_name:null})
+};
+
+let quotes=[],contacts=[],estimations=[],sfilt='all',editing=null,lines=[],qview='quotes';
+const estLines={mat:[],lab:[],dir:[]};
+const $=id=>document.getElementById(id);
+const esc=s=>(s??'').toString().replaceAll('&','&amp;').replaceAll('<','&lt;').replaceAll('>','&gt;').replaceAll('"','&quot;').replaceAll("'",'&#39;');
+const fmtSAR=n=>'SAR '+Number(n||0).toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2});
+const fmtSAR0=n=>'SAR '+Number(n||0).toLocaleString('en-US',{maximumFractionDigits:0});
+const fmtDate=d=>d?new Date(d).toLocaleDateString('en-GB',{day:'numeric',month:'short',year:'numeric'}):'--';
+const today=()=>new Date().toISOString().slice(0,10);
+
+function toggleTheme(){const n=document.documentElement.getAttribute('data-theme')==='dark'?'light':'dark';document.documentElement.setAttribute('data-theme',n);localStorage.setItem('apm_theme',n);}
+function toast(m,e){const t=document.createElement('div');t.className='toast'+(e?' err':'');t.textContent=m;$('toasts').appendChild(t);setTimeout(()=>t.remove(),3800);}
+
+async function loadAll(){
+  const[qR,cR,eR]=await Promise.all([
+    sb.from('quotes').select('*').order('created_at',{ascending:false}),
+    sb.from('crm_contacts').select('id,name,company').order('name'),
+    sb.from('apm_estimations').select('*').order('created_at',{ascending:false}),
+  ]);
+  if(qR.error){$('listBody').innerHTML='<div class="tbl-wrap"><div class="empty"><strong>Could not load</strong>Run erp_setup_all.sql and fix_permissions.sql in Supabase.</div></div>';toast(qR.error.message,1);return;}
+  quotes=qR.data;contacts=cR.error?[]:cR.data;estimations=eR.error?[]:eR.data;
+  renderStats();renderList();
+}
+
+function switchQView(v){
+  qview=v;
+  document.querySelectorAll('[data-v]').forEach(b=>{
+    const on=b.dataset.v===v;
+    b.style.background=on?'var(--bg)':'transparent';
+    b.style.color=on?'var(--text)':'var(--text3)';
+    b.style.fontWeight=on?'600':'500';
+  });
+  const isEst=v==='estimations';
+  const qv=document.getElementById('quotesView');
+  const ev=document.getElementById('estimationsView');
+  if(qv)qv.style.display=isEst?'none':'';
+  if(ev)ev.style.display=isEst?'':'none';
+  $('btnEst').style.display=isEst?'':'none';
+  $('btnQuote').style.display=isEst?'none':'';
+  if(isEst)renderEstimations();
+}
+
+function renderStats(){
+  const acc=quotes.filter(q=>q.status==='accepted');
+  const dec=quotes.filter(q=>q.status==='accepted'||q.status==='rejected');
+  $('stT').textContent=quotes.length;
+  $('stS').textContent=quotes.filter(q=>q.status==='sent').length;
+  $('stA').textContent=fmtSAR0(acc.reduce((s,q)=>s+Number(q.total||0),0));
+  $('stW').textContent=dec.length?Math.round(acc.length/dec.length*100)+'%':'--';
+}
+
+function setF(f){sfilt=f;document.querySelectorAll('.ftab').forEach(t=>t.classList.toggle('active',t.dataset.f===f));renderList();}
+
+function renderList(){
+  let list=quotes.slice();
+  if(sfilt!=='all')list=list.filter(q=>q.status===sfilt);
+  const term=$('search').value.trim().toLowerCase();
+  if(term)list=list.filter(q=>[q.quote_no,q.client_name,q.project_name].some(v=>(v||'').toLowerCase().includes(term)));
+  if(!list.length){$('listBody').innerHTML='<div class="tbl-wrap"><div class="empty"><strong>No quotes</strong>Click "New quote" to create the first one.</div></div>';return;}
+  const rows=list.map(q=>{const s=STATUSES[q.status]||STATUSES.draft;return`<tr class="rc" onclick="openQuote('${q.id}')"><td class="mono">${esc(q.quote_no)}</td><td><strong>${esc(q.client_name)}</strong><div class="dim">${esc(q.project_name)}</div></td><td class="mono dim">${fmtDate(q.quote_date)}</td><td class="mono">${fmtSAR0(q.total)}</td><td><span class="badge" style="color:${s.color};border-color:${s.color}44">${s.label}</span></td></tr>`;}).join('');
+  $('listBody').innerHTML=`<div class="tbl-wrap"><table><thead><tr><th>Quote no</th><th>Client / Project</th><th>Date</th><th>Total</th><th>Status</th></tr></thead><tbody>${rows}</tbody></table></div>`;
+}
+
+function nextNo(){
+  const y=new Date().getFullYear(),p=`APM-Q-${y}-`;
+  const nums=quotes.map(q=>q.quote_no).filter(n=>n&&n.startsWith(p)).map(n=>parseInt(n.slice(p.length),10)).filter(n=>!isNaN(n));
+  return p+String((nums.length?Math.max(...nums):0)+1).padStart(3,'0');
+}
+
+function showEditor(show){$('listView').style.display=show?'none':'';$('editor').classList.toggle('open',show);window.scrollTo(0,0);}
+function closeEditor(){showEditor(false);renderList();}
+
+function blankLine(type){return{type:type||'material',desc:'',qty:1,unit:'unit',rate:0};}
+function normLine(l){return{type:l.type||'material',desc:l.desc||'',qty:Number(l.qty||0),unit:l.unit||'unit',rate:Number(l.rate||0)};}
+
+function onStatusChange(){
+  const s=$('qStatus').value;
+  const wrap=$('rejReasonWrap');
+  if(wrap)wrap.style.display=s==='rejected'?'':'none';
+}
+
+// Quote password gate for editing
+let quoteEditPassword=null;
+async function getQuotePassword(){
+  if(quoteEditPassword)return quoteEditPassword;
+  try{
+    const r=await fetch(SB_URL+'/rest/v1/apm_settings?key=eq.mod_pass_quote&select=value',{
+      headers:{'apikey':SB_KEY,'Authorization':'Bearer '+SB_KEY}
+    });
+    const d=await r.json();
+    quoteEditPassword=d&&d[0]?d[0].value:'quote';
+  }catch(e){quoteEditPassword='quote';}
+  return quoteEditPassword;
+}
+async function checkQuotePassword(){
+  return new Promise(resolve=>{
+    const ov=document.createElement('div');
+    ov.className='overlay open';
+    ov.innerHTML=`<div class="modal" style="max-width:360px">
+      <h2>Edit quote</h2>
+      <p style="font-size:13px;color:var(--text3);margin-bottom:18px">Enter the edit password to modify this quote.</p>
+      <div class="field"><label>Password</label><input id="qPwInput" type="password" placeholder="Password"></div>
+      <div style="color:#C0392B;font-size:12.5px;display:none" id="qPwErr">Incorrect password.</div>
+      <div class="modal-foot">
+        <button class="btn btn-sm" onclick="document.body.removeChild(this.closest('.overlay'));resolve(false)">Cancel</button>
+        <button class="btn btn-gold btn-sm" id="qPwBtn" onclick="checkQPw(resolve,this.closest('.overlay'))">Confirm</button>
+      </div>
+    </div>`;
+    document.body.appendChild(ov);
+    setTimeout(()=>ov.querySelector('#qPwInput').focus(),80);
+    ov.querySelector('#qPwInput').addEventListener('keydown',e=>{
+      if(e.key==='Enter')checkQPw(resolve,ov);
+    });
+    window._qPwResolve=resolve;
+    window._qPwOv=ov;
+  });
+}
+async function checkQPw(resolve,ov){
+  const pw=document.getElementById('qPwInput')?.value;
+  const correct=await getQuotePassword();
+  if(pw===correct){document.body.removeChild(ov);resolve(true);}
+  else{
+    const err=ov.querySelector('#qPwErr');if(err)err.style.display='block';
+    const inp=ov.querySelector('#qPwInput');if(inp){inp.value='';inp.focus();}
+  }
+}
+
+function newQuote(){
+  editing=null;$('edTitle').textContent='New quote';$('edSub').textContent='';
+  $('qNo').value=nextNo();$('qStatus').value='draft';$('qClient').value='';$('qProject').value='';
+  $('qDate').value=today();$('qValidity').value='30';$('qNotes').value='Payment 50% advance, balance on delivery.';
+  $('clist').innerHTML=contacts.map(c=>`<option value="${esc(c.company||c.name)}">`).join('');
+  lines=[blankLine('fabrication'),blankLine('installation')];renderLines();showEditor(true);
+}
+
+function openQuote(id){
+  editing=quotes.find(q=>q.id===id);if(!editing)return;
+  $('edTitle').textContent='Quote '+editing.quote_no;
+  $('edSub').textContent=editing.client_name+' -- '+editing.project_name;
+  $('qNo').value=editing.quote_no;$('qStatus').value=editing.status;
+  $('qClient').value=editing.client_name||'';$('qProject').value=editing.project_name||'';
+  $('qDate').value=editing.quote_date||'';$('qValidity').value=String(editing.validity_days||30);
+  $('qNotes').value=editing.notes||'';
+  $('clist').innerHTML=contacts.map(c=>`<option value="${esc(c.company||c.name)}">`).join('');
+  lines=(editing.line_items&&editing.line_items.length)?editing.line_items.map(normLine):[blankLine('fabrication')];
+  renderLines();showEditor(true);
+}
+
+function isLMType(t){return['railing','handle_wood','handle_glass','handle_metal'].includes(t);}
+function renderLines(){
+  $('lineItems').innerHTML=lines.map((l,i)=>{
+    const amt=(Number(l.qty)||0)*(Number(l.rate)||0);
+    const lm=isLMType(l.type);
+    const units=lm?['lm']:['unit','kg','m','m2','ton','lot','hour'];
+    const ratePlaceholder=lm?('e.g. '+(LM_RATES[l.type]||1000)):'rate';
+    const descPlaceholder=lm?
+      (l.type==='railing'?'Stainless steel railing, 50mm tube':
+       l.type.startsWith('handle')?'Handle set, per piece':'')
+      :'e.g. RHS 100x100 frame';
+    return`<div class="li-row">
+      <select onchange="onTypeChange(${i},this.value)">${TYPES.map(t=>`<option value="${t.id}"${l.type===t.id?' selected':''}>${t.label}</option>`).join('')}</select>
+      <input value="${esc(l.desc)}" placeholder="${descPlaceholder}" oninput="upd(${i},'desc',this.value)">
+      <input type="number" min="0" step="any" value="${l.qty}" placeholder="${lm?'linear m':'qty'}" oninput="updCalc(${i},'qty',this.value)">
+      <select onchange="upd(${i},'unit',this.value)">${units.map(u=>`<option${l.unit===u?' selected':''}>${u}</option>`).join('')}</select>
+      <input type="number" min="0" step="any" value="${l.rate}" placeholder="${ratePlaceholder}" oninput="updCalc(${i},'rate',this.value)">
+      <div class="amt-cell">${fmtSAR0(amt)}</div>
+      <button class="li-del" onclick="delLine(${i})">x</button>
+    </div>`;
+  }).join('');
+  recalc();
+}
+function onTypeChange(i,t){
+  lines[i].type=t;
+  if(isLMType(t)){
+    if(!lines[i].rate||lines[i].rate===0)lines[i].rate=LM_RATES[t]||1000;
+    lines[i].unit='lm';
+  }
+  renderLines();
+}
+function upd(i,f,v){lines[i][f]=v;}
+function updCalc(i,f,v){lines[i][f]=(f==='qty'||f==='rate')?(parseFloat(v)||0):v;const row=$('lineItems').children[i];if(row){const amt=(Number(lines[i].qty)||0)*(Number(lines[i].rate)||0);row.querySelector('.amt-cell').textContent=fmtSAR0(amt);}recalc();}
+function addLine(){lines.push(blankLine('material'));renderLines();}
+function delLine(i){lines.splice(i,1);if(!lines.length)lines.push(blankLine('material'));renderLines();}
+function calcTots(){const sub=lines.reduce((s,l)=>s+(Number(l.qty)||0)*(Number(l.rate)||0),0);const vat=sub*VAT;return{sub,vat,total:sub+vat};}
+function recalc(){const t=calcTots();$('tSub').textContent=fmtSAR(t.sub);$('tVat').textContent=fmtSAR(t.vat);$('tTot').textContent=fmtSAR(t.total);}
+
+async function saveQuote(){
+  const client=$('qClient').value.trim(),project=$('qProject').value.trim();
+  if(!client)return toast('Client name required',1);if(!project)return toast('Project name required',1);
+  const clean=lines.filter(l=>l.desc.trim()||l.rate>0||l.qty>0).map(normLine);
+  if(!clean.length)return toast('Add at least one line item',1);
+  const t=calcTots(),status=$('qStatus').value;
+  const rej_reason=status==='rejected'?($('qRejReason')?.value||null):null;
+  const rec={quote_no:$('qNo').value,status,client_name:client,project_name:project,quote_date:$('qDate').value||today(),deadline:$('qDeadline')?.value||null,validity_days:parseInt($('qValidity').value,10),line_items:clean,subtotal:t.sub,vat:t.vat,total:t.total,notes:$('qNotes').value.trim()||null,rejection_reason:rej_reason,payment_terms:$('qPayTerms')?.value||null,sent_via:$('qSentVia')?.value||'whatsapp',delivery_address:$('qDelivAddr')?.value.trim()||null,warranty_terms:$('qWarranty')?.value.trim()||null};
+  $('saveBtn').disabled=true;
+  let savedId=editing?.id;
+  const wasAcc=editing?.status==='accepted';
+  if(editing){const{error}=await sb.from('quotes').update(rec).eq('id',editing.id);if(error){$('saveBtn').disabled=false;return toast(error.message,1);}}
+  else{const{data,error}=await sb.from('quotes').insert(rec).select().single();if(error){$('saveBtn').disabled=false;return toast(error.message,1);}savedId=data.id;}
+  if(status==='accepted'&&!wasAcc){
+    const proj=COST_MANAGER.map({...rec,quote_no:rec.quote_no});
+    const{error:pErr}=await sb.from(COST_MANAGER.table).insert({...proj,source_quote_id:savedId});
+    if(pErr)toast('Quote saved -- project creation failed: '+pErr.message,1);
+    else toast('Quote accepted -- project created in Cost Manager');
+  }
+  $('saveBtn').disabled=false;
+  if(!(status==='accepted'&&!wasAcc))toast(editing?'Quote updated':'Quote saved');
+  await loadAll();
+APM_SEC.init('Quotations');
+
+// Log module access
+(async function logAccess(){
+  try{
+    const _s=JSON.parse(sessionStorage.getItem('apm_auth')||'{}');
+    if(!_s.user||!_s.access_token)return;
+    const _lsb=supabase.createClient(
+      'https://spfztpokbpomqtiqgggz.supabase.co',
+      'sb_publishable_xPXU0xL_YaiWA6k9PWc0Xg_4QYeypNi',
+      {global:{headers:{Authorization:'Bearer '+_s.access_token}},auth:{persistSession:false,autoRefreshToken:false}}
+    );
+    await _lsb.from('apm_access_log').insert({user_name:_s.user,module:'Quotations',action:'opened'});
+  }catch(e){}
+})();
+closeEditor();
+}
+
+function printQuote(){
+  const t=calcTots();
+  const validUntil=(()=>{const d=new Date($('qDate').value||Date.now());d.setDate(d.getDate()+parseInt($('qValidity').value,10));return d;})();
+  const rows=lines.filter(l=>l.desc.trim()||l.rate>0).map(l=>{const amt=(Number(l.qty)||0)*(Number(l.rate)||0);const tl=TYPES.find(x=>x.id===l.type)?.label||l.type;return`<tr><td>${esc(tl)}</td><td>${esc(l.desc)}</td><td style="text-align:right">${l.qty} ${esc(l.unit)}</td><td style="text-align:right">${fmtSAR(l.rate)}</td><td style="text-align:right">${fmtSAR(amt)}</td></tr>`;}).join('');
+  const S=STATUSES[$('qStatus').value];
+  const w=window.open('','_blank');
+  w.document.write(`<!doctype html><html><head><meta charset="utf-8"><title>${esc($('qNo').value)}</title><style>body{font-family:Arial,Helvetica,sans-serif;color:#111;margin:48px;font-size:13px}h1{font-size:22px;margin:0}hr{border:none;border-top:2px solid #C8A96E;margin:16px 0}.hd{display:flex;justify-content:space-between;margin-bottom:20px}.sub{color:#666;font-size:11px;text-transform:uppercase;letter-spacing:.1em;margin-top:3px}.meta td{padding:3px 0}.meta td:first-child{color:#666;padding-right:24px;font-size:12px}table.items{width:100%;border-collapse:collapse;margin:20px 0}table.items th{background:#F5F5F5;text-align:left;padding:9px 10px;font-size:11px;text-transform:uppercase;letter-spacing:.06em}table.items td{padding:9px 10px;border-bottom:1px solid #E8E8E8}.tot{margin-left:auto;width:280px}.tot td{padding:5px 0}.tot td:last-child{text-align:right;font-variant-numeric:tabular-nums}.grand td{border-top:2px solid #111;font-weight:700;font-size:15px;padding-top:8px}.notes{margin-top:24px;color:#555;font-size:12px;border-top:1px solid #ddd;padding-top:12px}</style></head><body>
+  <div class="hd"><div><h1>APM Metal Works</h1><div class="sub">VAT Quotation -- Riyadh, Saudi Arabia</div></div><div style="text-align:right"><div style="font-size:18px;font-weight:700">${esc($('qNo').value)}</div><div class="sub">${S.label}</div></div></div><hr>
+  <table class="meta"><tr><td>Client</td><td><strong>${esc($('qClient').value)}</strong></td><td style="padding-left:40px">Quote date</td><td>${fmtDate($('qDate').value)}</td></tr><tr><td>Project</td><td>${esc($('qProject').value)}</td><td style="padding-left:40px">Valid until</td><td>${fmtDate(validUntil)}</td></tr></table>
+  <table class="items"><thead><tr><th>Type</th><th>Description</th><th style="text-align:right">Qty</th><th style="text-align:right">Rate (SAR)</th><th style="text-align:right">Amount (SAR)</th></tr></thead><tbody>${rows}</tbody></table>
+  <table class="tot"><tr><td>Subtotal</td><td>${fmtSAR(t.sub)}</td></tr><tr><td>VAT (15%)</td><td>${fmtSAR(t.vat)}</td></tr><tr class="grand"><td>Total</td><td>${fmtSAR(t.total)}</td></tr></table>
+  ${$('qNotes').value.trim()?`<div class="notes">${esc($('qNotes').value)}</div>`:''}
+  
+<!-- Security watermark - shows user name on every page -->
+<div id="secWatermark" style="position:fixed;bottom:12px;left:16px;font-size:11px;color:var(--text3,#888);opacity:0.4;pointer-events:none;user-select:none;z-index:1000;font-family:monospace"></div>
+<script>
+(function(){
+  var s=JSON.parse(sessionStorage.getItem('apm_auth')||'{}');
+  var el=document.getElementById('secWatermark');
+  if(el&&s.user){
+    var now=new Date();
+    el.textContent=s.user+' - '+now.toLocaleDateString('en-GB')+' '+now.toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit'});
+  }
+})();
+</script>
+</body></html>`);
+  w.document.close();setTimeout(()=>w.print(),350);
+}
+
+document.addEventListener('keydown',e=>{if(e.key==='Escape'&&$('editor').classList.contains('open'))closeEditor();});
+
+// ================================================================
+// ESTIMATIONS
+// ================================================================
+function renderEstimations(){
+  if(!estimations.length){
+    $('estimationsView').innerHTML='<div class="tbl-wrap"><div class="empty"><strong>No estimations yet</strong>Create an estimation to calculate your cost and suggest a client price with your target margin.</div></div>';
+    return;
+  }
+  const ST={draft:{l:'Draft',c:'#888'},sent:{l:'Sent',c:'#C8A96E'},approved:{l:'Approved',c:'#2D7D46'},completed:{l:'Completed',c:'#A8874E'}};
+  const rows=estimations.map(e=>{
+    const s=ST[e.status]||ST.draft;
+    const variance=e.actual_cost?e.actual_cost-e.subtotal:null;
+    return`<tr class="rc" onclick="openEst('${e.id}')">
+      <td><strong>${esc(e.project_name)}</strong>${e.client?'<div class="dim">'+esc(e.client)+'</div>':''}</td>
+      <td class="mono">${fmtSAR(e.subtotal)}</td>
+      <td class="mono gold">${fmtSAR(e.suggested_price)}</td>
+      <td class="mono dim">${num(e.margin_pct).toFixed(0)}%</td>
+      <td>${variance!==null?'<span class="mono" style="color:'+( variance>0?'#C0392B':'#2D7D46')+'">'+fmtSAR(Math.abs(variance))+(variance>0?' over':' under')+'</span>':'<span class="dim">--</span>'}</td>
+      <td><span class="badge" style="color:${s.c};border-color:${s.c}44">${s.l}</span></td>
+    </tr>`;
+  }).join('');
+  $('estimationsView').innerHTML=`<div class="tbl-wrap"><table>
+    <thead><tr><th>Project</th><th>Est. cost</th><th>Suggested price</th><th>Margin</th><th>Variance vs actual</th><th>Status</th></tr></thead>
+    <tbody>${rows}</tbody>
+  </table></div>`;
+}
+
+function showEst(){openEst(null);}
+
+function openEst(id){
+  const est=id?estimations.find(x=>x.id===id):null;
+  // Build estimation editor overlay
+  const projects_opts='';
+  const matRows=(est?.materials||[{desc:'',qty:1,unit:'kg',rate:'',amount:0}]).map((l,i)=>estLineRow('mat',i,l)).join('');
+  const labRows=(est?.labor||[{desc:'',qty:1,unit:'hour',rate:'',amount:0}]).map((l,i)=>estLineRow('lab',i,l)).join('');
+  const dirRows=(est?.direct||[{desc:'',qty:1,unit:'lot',rate:'',amount:0}]).map((l,i)=>estLineRow('dir',i,l)).join('');
+
+  const html=`<div class="modal" style="max-width:740px">
+    <h2>${est?'Edit estimation':'New estimation'}</h2>
+    <input type="hidden" id="estId" value="${est?.id||''}">
+    <div class="f2">
+      <div class="field"><label>Project name</label><input id="estPName" value="${esc(est?.project_name||'')}" placeholder="Warehouse mezzanine"></div>
+      <div class="field"><label>Client</label><input id="estClient" value="${esc(est?.client||'')}" placeholder="optional"></div>
+    </div>
+    <div class="f2">
+      <div class="field"><label>Target margin %</label><input id="estMargin" type="number" step="1" value="${est?.margin_pct||30}" oninput="recalcEst()"></div>
+      <div class="field"><label>Deadline</label><input id="estDeadline" type="date" value="${est?.deadline||''}"></div>
+    </div>
+    <div class="f2">
+      <div class="field"><label>Status</label>
+        <select id="estStatus">
+          <option value="draft" ${est?.status==='draft'?'selected':''}>Draft</option>
+          <option value="sent" ${est?.status==='sent'?'selected':''}>Sent</option>
+          <option value="approved" ${est?.status==='approved'?'selected':''}>Approved</option>
+          <option value="completed" ${est?.status==='completed'?'selected':''}>Completed</option>
+        </select>
+      </div>
+      <div class="field"><label>Overtime hours</label><input id="estOT" type="number" min="0" step="any" value="${est?.overtime_hours||0}" placeholder="0" oninput="recalcEst()"></div>
+    </div>
+
+    <div style="font-size:12px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--text3);margin:16px 0 10px">Materials</div>
+    <table class="est-tbl" id="matTbl"><thead><tr><th style="width:38%">Description</th><th>Qty</th><th>Unit</th><th>Rate (SAR)</th><th>Amount</th><th style="width:28px"></th></tr></thead>
+    <tbody id="matBody">${matRows}</tbody></table>
+    <button class="btn btn-sm" style="margin-bottom:14px;font-size:12px" onclick="addEstLine('mat')">+ Add material</button>
+
+    <div style="font-size:12px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--text3);margin:4px 0 10px">Labor</div>
+    <table class="est-tbl" id="labTbl"><thead><tr><th style="width:38%">Description</th><th>Qty</th><th>Unit</th><th>Rate (SAR)</th><th>Amount</th><th style="width:28px"></th></tr></thead>
+    <tbody id="labBody">${labRows}</tbody></table>
+    <button class="btn btn-sm" style="margin-bottom:14px;font-size:12px" onclick="addEstLine('lab')">+ Add labor</button>
+
+    <div style="font-size:12px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--text3);margin:4px 0 10px">Direct costs</div>
+    <table class="est-tbl" id="dirTbl"><thead><tr><th style="width:38%">Description</th><th>Qty</th><th>Unit</th><th>Rate (SAR)</th><th>Amount</th><th style="width:28px"></th></tr></thead>
+    <tbody id="dirBody">${dirRows}</tbody></table>
+    <button class="btn btn-sm" style="margin-bottom:14px;font-size:12px" onclick="addEstLine('dir')">+ Add direct cost</button>
+
+    <div class="f2" style="margin-top:8px">
+      <div class="field"><label>Indirect costs (SAR)</label><input id="estIndirect" type="number" step="any" value="${est?.indirect||0}" oninput="recalcEst()"></div>
+      <div class="field"><label>GOCI / Govt fees (SAR)</label><input id="estGoci" type="number" step="any" value="${est?.goci||0}" oninput="recalcEst()"></div>
+    </div>
+    <div class="f2" style="margin-top:4px">
+      <div class="field"><label>Food allowance (SAR)</label><input id="estFood" type="number" step="any" value="${est?.food||0}" placeholder="0" oninput="recalcEst()"></div>
+      <div class="field"><label>Transportation (SAR)</label><input id="estTransport" type="number" step="any" value="${est?.transport||0}" placeholder="0" oninput="recalcEst()"></div>
+    </div>
+
+    ${est?.status==='completed'?`<div class="field"><label>Actual cost (SAR) -- for variance tracking</label><input id="estActual" type="number" step="any" value="${est?.actual_cost||0}" oninput="recalcEst()"></div>`:''}
+
+    <div class="sum-box" id="estSummary" style="background:var(--bg1);border:1px solid var(--border);border-radius:8px;padding:16px;margin:12px 0"></div>
+
+    <div class="field"><label>Note</label><input id="estNote" value="${esc(est?.note||'')}" placeholder="optional"></div>
+    <div class="modal-foot">
+      ${est?'<button class="btn btn-danger btn-sm mfl" id="estDelBtn">Delete</button>':''}
+      <button class="btn btn-sm" onclick="closeEstModal()">Cancel</button>
+      <button class="btn btn-sm" onclick="estToPDF()">Print estimate</button>
+      <button class="btn btn-gold btn-sm" onclick="saveEst()">Save</button>
+    </div>
+  </div>`;
+
+  // Show in overlay
+  let ov=document.getElementById('estOverlay');
+  if(!ov){ov=document.createElement('div');ov.id='estOverlay';ov.className='overlay';document.body.appendChild(ov);}
+  ov.innerHTML=html;ov.classList.add('open');
+  ov.addEventListener('click',e=>{if(e.target===ov)closeEstModal();});
+  // Wire delete button safely
+  const delBtn=ov.querySelector('#estDelBtn');
+  if(delBtn&&id)delBtn.onclick=()=>deleteEst(id);
+  recalcEst();
+}
+
+function estLineRow(prefix,i,l){
+  return`<tr id="${prefix}row${i}">
+    <td><input value="${esc(l.desc||'')}" placeholder="description" oninput="recalcEst()"></td>
+    <td><input type="number" value="${l.qty||1}" min="0" step="any" style="width:65px" oninput="recalcEstLine('${prefix}',${i})"></td>
+    <td><input value="${esc(l.unit||'')}" style="width:55px" placeholder="kg"></td>
+    <td><input type="number" value="${l.rate||''}" min="0" step="any" style="width:95px" oninput="recalcEstLine('${prefix}',${i})"></td>
+    <td class="mono right" id="${prefix}amt${i}">${fmtSAR((l.qty||0)*(l.rate||0))}</td>
+    <td><button onclick="removeEstLine('${prefix}',${i})" style="background:none;border:none;color:var(--text3);font-size:16px;cursor:pointer;padding:0 4px">&times;</button></td>
+  </tr>`;
+}
+
+// estLines is declared in state above
+function getEstLineData(prefix){
+  const body=document.getElementById(prefix+'Body');
+  if(!body)return[];
+  return Array.from(body.querySelectorAll('tr')).map((_,i)=>{
+    const inputs=body.querySelectorAll('tr')[i]?.querySelectorAll('input');
+    if(!inputs||inputs.length<4)return null;
+    const qty=num(inputs[1].value),rate=num(inputs[3].value);
+    return{desc:inputs[0].value,qty,unit:inputs[2].value,rate,amount:qty*rate};
+  }).filter(Boolean);
+}
+function recalcEstLine(prefix,i){
+  const rows=document.getElementById(prefix+'Body')?.querySelectorAll('tr');
+  if(!rows||!rows[i])return;
+  const inputs=rows[i].querySelectorAll('input');
+  const amt=num(inputs[1]?.value)*num(inputs[3]?.value);
+  const amtCell=document.getElementById(prefix+'amt'+i);
+  if(amtCell)amtCell.textContent=fmtSAR(amt);
+  recalcEst();
+}
+function addEstLine(prefix){
+  const body=document.getElementById(prefix+'Body');
+  if(!body)return;
+  const i=body.querySelectorAll('tr').length;
+  const tr=document.createElement('tr');
+  tr.id=prefix+'row'+i;
+  tr.innerHTML=estLineRow(prefix,i,{desc:'',qty:1,unit:'',rate:'',amount:0}).replace(/^<tr[^>]*>/,'').replace(/<\/tr>$/,'');
+  body.appendChild(tr);
+}
+function removeEstLine(prefix,i){
+  const row=document.getElementById(prefix+'row'+i);
+  if(row)row.remove();
+  recalcEst();
+}
+function recalcEst(){
+  const mat=getEstLineData('mat').reduce((s,l)=>s+l.amount,0);
+  const lab=getEstLineData('lab').reduce((s,l)=>s+l.amount,0);
+  const dir=getEstLineData('dir').reduce((s,l)=>s+l.amount,0);
+  const indirect=num(document.getElementById('estIndirect')?.value);
+  const goci=num(document.getElementById('estGoci')?.value);
+  const food=num(document.getElementById('estFood')?.value);
+  const transport=num(document.getElementById('estTransport')?.value);
+  const otHours=num(document.getElementById('estOT')?.value);
+  // OT estimated at avg 1.5x hourly rate - use labor total / estimated hours / 8h day as base
+  const labBase=lab>0&&otHours>0?(lab/160)*1.5*otHours:0; // rough: 160h/month
+  const subtotal=mat+lab+dir+indirect+goci+food+transport+labBase;
+  const margin=num(document.getElementById('estMargin')?.value)||30;
+  const suggested=subtotal/(1-margin/100);
+  const actual=num(document.getElementById('estActual')?.value);
+  const variance=actual?actual-subtotal:null;
+  const deadline=document.getElementById('estDeadline')?.value;
+  const daysLeft=deadline?Math.round((new Date(deadline)-new Date())/(86400000)):'';
+  const box=document.getElementById('estSummary');
+  if(!box)return;
+  box.innerHTML=
+    (deadline?'<div style="display:flex;justify-content:space-between;margin-bottom:8px;padding:8px 12px;background:var(--bg2);border-radius:6px;font-size:13px"><span class="dim">Deadline</span><span style="font-weight:600;color:'+( daysLeft<7?'#C0392B':'var(--gold-dk)')+'">'+new Date(deadline).toLocaleDateString('en-GB')+(daysLeft>=0?' ('+daysLeft+' days)':' (overdue)')+'</span></div>':'')
+    +'<div style="display:flex;justify-content:space-between;margin-bottom:5px;font-size:13px"><span class="dim">Materials</span><span class="mono">'+fmtSAR(mat)+'</span></div>'
+    +'<div style="display:flex;justify-content:space-between;margin-bottom:5px;font-size:13px"><span class="dim">Labor</span><span class="mono">'+fmtSAR(lab)+'</span></div>'
+    +(otHours?'<div style="display:flex;justify-content:space-between;margin-bottom:5px;font-size:13px"><span class="dim">Overtime ('+otHours+'h est.)</span><span class="mono">'+fmtSAR(labBase)+'</span></div>':'')
+    +'<div style="display:flex;justify-content:space-between;margin-bottom:5px;font-size:13px"><span class="dim">Direct costs</span><span class="mono">'+fmtSAR(dir)+'</span></div>'
+    +(food?'<div style="display:flex;justify-content:space-between;margin-bottom:5px;font-size:13px"><span class="dim">Food allowance</span><span class="mono">'+fmtSAR(food)+'</span></div>':'')
+    +(transport?'<div style="display:flex;justify-content:space-between;margin-bottom:5px;font-size:13px"><span class="dim">Transportation</span><span class="mono">'+fmtSAR(transport)+'</span></div>':'')
+    +'<div style="display:flex;justify-content:space-between;margin-bottom:5px;font-size:13px"><span class="dim">Indirect</span><span class="mono">'+fmtSAR(indirect)+'</span></div>'
+    +'<div style="display:flex;justify-content:space-between;margin-bottom:10px;font-size:13px"><span class="dim">GOCI</span><span class="mono">'+fmtSAR(goci)+'</span></div>'
+    +'<div style="display:flex;justify-content:space-between;margin-bottom:5px;font-size:14px;font-weight:600;border-top:1px solid var(--border);padding-top:10px"><span>Estimated cost</span><span class="mono">'+fmtSAR(subtotal)+'</span></div>'
+    +'<div style="display:flex;justify-content:space-between;margin-bottom:5px;font-size:14px;font-weight:700"><span style="color:var(--gold-dk)">Suggested price ('+margin+'% margin)</span><span class="mono" style="color:var(--gold-dk)">'+fmtSAR(suggested)+'</span></div>'
+    +(variance!==null?'<div style="display:flex;justify-content:space-between;font-size:13px"><span class="dim">Variance vs actual</span><span class="mono" style="color:'+(variance>0?'#C0392B':'#2D7D46')+'">'+fmtSAR(Math.abs(variance))+' '+(variance>0?'over':'under')+' budget</span></div>':'');
+}
+async function saveEst(){
+  const name=document.getElementById('estPName')?.value.trim();
+  if(!name)return toast('Project name required',1);
+  const mat=getEstLineData('mat'),lab=getEstLineData('lab'),dir=getEstLineData('dir');
+  const indirect=num(document.getElementById('estIndirect')?.value);
+  const goci=num(document.getElementById('estGoci')?.value);
+  const subtotal=mat.reduce((s,l)=>s+l.amount,0)+lab.reduce((s,l)=>s+l.amount,0)+dir.reduce((s,l)=>s+l.amount,0)+indirect+goci;
+  const margin=num(document.getElementById('estMargin')?.value)||30;
+  const suggested=subtotal/(1-margin/100);
+  const actual=num(document.getElementById('estActual')?.value);
+  const food=num(document.getElementById('estFood')?.value);
+  const transport=num(document.getElementById('estTransport')?.value);
+  const otHours=num(document.getElementById('estOT')?.value);
+  const rec={
+    project_name:name,
+    client:document.getElementById('estClient')?.value.trim()||null,
+    materials:mat,labor:lab,direct:dir,indirect,goci,food,transport,
+    overtime_hours:otHours,
+    deadline:document.getElementById('estDeadline')?.value||null,
+    subtotal,margin_pct:margin,suggested_price:suggested,
+    actual_cost:actual||null,
+    variance:actual?actual-subtotal:null,
+    status:document.getElementById('estStatus')?.value||'draft',
+    note:document.getElementById('estNote')?.value.trim()||null,
+  };
+  const id=document.getElementById('estId')?.value;
+  const{error}=await(id?sb.from('apm_estimations').update(rec).eq('id',id):sb.from('apm_estimations').insert(rec));
+  if(error)return toast(error.message,1);
+  closeEstModal();toast('Estimation saved');loadAll();
+}
+async function deleteEst(id){
+  if(!confirm('Delete this estimation?'))return;
+  const{error}=await sb.from('apm_estimations').delete().eq('id',id);
+  if(error)return toast(error.message,1);
+  closeEstModal();toast('Deleted');loadAll();
+}
+function closeEstModal(){const ov=document.getElementById('estOverlay');if(ov)ov.classList.remove('open');}
+function estToPDF(){
+  const name=document.getElementById('estPName')?.value||'Estimation';
+  const client=document.getElementById('estClient')?.value||'';
+  const mat=getEstLineData('mat'),lab=getEstLineData('lab'),dir=getEstLineData('dir');
+  const indirect=num(document.getElementById('estIndirect')?.value);
+  const goci=num(document.getElementById('estGoci')?.value);
+  const subtotal=mat.reduce((s,l)=>s+l.amount,0)+lab.reduce((s,l)=>s+l.amount,0)+dir.reduce((s,l)=>s+l.amount,0)+indirect+goci;
+  const margin=num(document.getElementById('estMargin')?.value)||30;
+  const suggested=subtotal/(1-margin/100);
+  const sectionRows=(items,title)=>items.length?'<tr style="background:#f5f5f5"><td colspan="4" style="font-weight:700;padding:8px">'+title+'</td></tr>'+items.map(l=>'<tr><td>'+esc(l.desc)+'</td><td style="text-align:center">'+l.qty+' '+esc(l.unit||'')+'</td><td style="text-align:right">SAR '+num(l.rate).toLocaleString()+'</td><td style="text-align:right">SAR '+num(l.amount).toLocaleString()+'</td></tr>').join(''):'';
+  const w=window.open('','_blank');
+  w.document.write('<!DOCTYPE html><html><head><title>Estimation -- '+esc(name)+'</title>'
+    +'<style>body{font-family:Arial,sans-serif;max-width:760px;margin:40px auto;padding:0 24px;color:#111}'
+    +'h1{font-size:18px;border-bottom:2px solid #C8A96E;padding-bottom:10px}'
+    +'.brand{font-size:20px;font-weight:800;margin-bottom:4px}.brand span{color:#C8A96E}'
+    +'table{width:100%;border-collapse:collapse;font-size:13px;margin:16px 0}'
+    +'th,td{padding:8px;border-bottom:1px solid #eee;text-align:left}'
+    +'th{background:#f5f5f5;font-size:11px;text-transform:uppercase;color:#666}'
+    +'.tot{font-weight:800;font-size:15px;background:#FBF6EC}'
+    +'.sig{margin-top:60px;display:flex;justify-content:space-between}'
+    +'.sig div{border-top:1px solid #999;padding-top:6px;font-size:12px;width:40%;text-align:center}'
+    +'</style></head><body>'
+    +'<div class="brand">APM <span>Metal Works</span></div>'
+    +'<h1>Cost Estimation</h1>'
+    +'<div style="font-size:13px;color:#555;margin-bottom:20px">Project: <strong>'+esc(name)+'</strong>'+(client?' &nbsp;|&nbsp; Client: <strong>'+esc(client)+'</strong>':'')+'&nbsp;|&nbsp; Date: '+new Date().toLocaleDateString('en-GB')+'</div>'
+    +'<table><thead><tr><th>Description</th><th style="text-align:center">Qty</th><th style="text-align:right">Rate</th><th style="text-align:right">Amount</th></tr></thead><tbody>'
+    +sectionRows(mat,'Materials')
+    +sectionRows(lab,'Labor')
+    +sectionRows(dir,'Direct costs')
+    +(indirect?'<tr><td>Indirect costs</td><td></td><td></td><td style="text-align:right">SAR '+indirect.toLocaleString()+'</td></tr>':'')
+    +(goci?'<tr><td>GOCI / Government fees</td><td></td><td></td><td style="text-align:right">SAR '+goci.toLocaleString()+'</td></tr>':'')
+    +'</tbody><tfoot>'
+    +'<tr><td colspan="3" style="text-align:right;font-weight:700">Total estimated cost</td><td style="text-align:right;font-weight:700">SAR '+subtotal.toLocaleString(undefined,{maximumFractionDigits:0})+'</td></tr>'
+    +'<tr class="tot"><td colspan="3" style="text-align:right">Suggested client price ('+margin+'% margin)</td><td style="text-align:right;color:#8A6A28">SAR '+suggested.toLocaleString(undefined,{maximumFractionDigits:0})+'</td></tr>'
+    +'</tfoot></table>'
+    +'<div class="sig"><div>Prepared by</div><div>Approved by</div></div>'
+    +'<scr'+'ipt>window.onload=function(){window.print();}<'+'/scr'+'ipt>'
+    +'</body></html>');
+  w.document.close();
+}
+
+// Enter key in editor fields
+document.addEventListener('keydown',function(e){
+  if(e.key!=='Enter')return;
+  var t=e.target;
+  if((t.id==='qClient'||t.id==='qProject')&&$('editor').classList.contains('open'))saveQuote();
+});
+// Check for estimate prefill from AI Estimator
+(function(){
+  try{
+    const pre=sessionStorage.getItem('apm_est_prefill');
+    if(pre){
+      sessionStorage.removeItem('apm_est_prefill');
+      const d=JSON.parse(pre);
+      setTimeout(()=>{
+        newQuote();
+        lines=[{type:'fabrication',desc:d.description||'AI estimate',qty:d.qty||1,unit:'lot',rate:d.rate||0}];
+        renderLines();
+        toast('Estimate loaded from AI Estimator - review and save');
+      },400);
+    }
+  }catch(e){}
+})();
+loadAll();
+</script>
+</body>
+</html>

@@ -1,0 +1,320 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>Delivery Notes -- APM Metal Works</title>
+<script>
+(function(){
+  var K='apm_auth',T=10*60*60*1000;
+  try{var s=JSON.parse(sessionStorage.getItem(K));if(!s||Date.now()-s.ts>T)throw 0;}
+  catch(e){window.location.href='login.html';return;}
+  document.addEventListener('DOMContentLoaded',function(){
+    document.body.style.display='none';
+    var gate=document.createElement('div');gate.id='mod-gate';
+    gate.innerHTML='<style>#mod-gate{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;background:var(--bg,#fff);z-index:9999;font-family:inherit}#mod-gate .gc{width:100%;max-width:360px;padding:24px;border:1px solid var(--border,#d8d8d8);border-radius:10px;box-shadow:0 4px 20px rgba(0,0,0,.08)}#mod-gate h2{font-size:17px;font-weight:700;margin-bottom:4px}#mod-gate p{font-size:13px;color:var(--text3,#888);margin-bottom:20px}#mod-gate label{display:block;font-size:11px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--text3,#888);margin-bottom:7px}#mod-gate input{width:100%;padding:11px 13px;border:1px solid var(--border,#d8d8d8);border-radius:6px;background:var(--bg1,#f5f5f5);color:var(--text,#0a0a0a);font-size:14px;font-family:inherit;box-sizing:border-box}#mod-gate input:focus{outline:none;border-color:#C8A96E}#mod-gate input.err{border-color:#C0392B}#mod-gate .errmsg{display:none;color:#C0392B;font-size:12.5px;margin-top:8px}#mod-gate .errmsg.show{display:block}#mod-gate button{width:100%;margin-top:14px;padding:11px;background:#C8A96E;border:none;border-radius:6px;color:#0a0a0a;font-size:14px;font-weight:700;cursor:pointer}#mod-gate button:hover{background:#A8874E}#mod-gate button:disabled{opacity:.6;cursor:not-allowed}</style><div class="gc"><h2>Delivery Notes</h2><p>Enter the module password to continue.</p><label>Password</label><input id="mgpw" type="password" placeholder="Password"/><div class="errmsg" id="mgerr">Incorrect password.</div><button id="mgbtn" onclick="mgCheck()">Open</button></div>';
+    document.body.parentNode.insertBefore(gate,document.body);
+    document.getElementById('mgpw').addEventListener('keydown',function(e){if(e.key==='Enter'){e.preventDefault();mgCheck();}});
+    document.getElementById('mgpw').addEventListener('input',function(){document.getElementById('mgerr').classList.remove('show');document.getElementById('mgpw').classList.remove('err');});
+    setTimeout(function(){document.getElementById('mgpw').focus();},80);
+  });
+  window.mgCheck=function(){
+    var pw=document.getElementById('mgpw').value;
+    var btn=document.getElementById('mgbtn');btn.disabled=true;btn.textContent='Checking...';
+    fetch('https://spfztpokbpomqtiqgggz.supabase.co/rest/v1/apm_settings?key=eq.mod_pass_delivery&select=value',{headers:{'apikey':'sb_publishable_xPXU0xL_YaiWA6k9PWc0Xg_4QYeypNi','Authorization':'Bearer sb_publishable_xPXU0xL_YaiWA6k9PWc0Xg_4QYeypNi'}})
+    .then(function(r){return r.json();}).then(function(d){
+      var correct=d&&d[0]&&d[0].value;
+      if(correct&&pw===correct){document.getElementById('mod-gate').remove();document.body.style.display='';}
+      else{document.getElementById('mgerr').classList.add('show');document.getElementById('mgpw').classList.add('err');document.getElementById('mgpw').value='';document.getElementById('mgpw').focus();btn.disabled=false;btn.textContent='Open';}
+    }).catch(function(){document.getElementById('mgerr').textContent='Could not connect.';document.getElementById('mgerr').classList.add('show');btn.disabled=false;btn.textContent='Open';});
+  };
+})();
+(function(){var t=localStorage.getItem('apm_theme')||'light';document.documentElement.setAttribute('data-theme',t);})();
+</script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="apm-security.js"></script>
+
+<style>
+:root{--gold:#C8A96E;--gold-dk:#A8874E;--black:#0A0A0A;--bg:#FFFFFF;--bg1:#F5F5F5;--bg2:#EBEBEB;--border:#D8D8D8;--text:#0A0A0A;--text2:#444444;--text3:#888888;--shadow:rgba(0,0,0,.07)}
+[data-theme="dark"]{--bg:#0A0A0A;--bg1:#141414;--bg2:#1E1E1E;--border:#2A2A2A;--text:#F0F0F0;--text2:#AAAAAA;--text3:#666666;--shadow:rgba(0,0,0,.35)}
+*,*::before,*::after{margin:0;padding:0;box-sizing:border-box}
+body{background:var(--bg);color:var(--text);font-family:'Inter',-apple-system,sans-serif;min-height:100vh;-webkit-font-smoothing:antialiased}
+button{font-family:inherit;cursor:pointer}
+.topbar{display:flex;align-items:center;justify-content:space-between;padding:0 28px;height:56px;border-bottom:1px solid var(--border);background:var(--bg);position:sticky;top:0;z-index:40}
+.topbar-left{display:flex;align-items:center;gap:16px}
+.brand-link{display:flex;align-items:center;gap:10px;text-decoration:none;color:var(--text)}
+.brand-mark{width:30px;height:30px;border-radius:6px;background:var(--gold);display:grid;place-items:center;font-size:13px;font-weight:800;color:var(--black);flex:none}
+.brand-name{font-size:14px;font-weight:700}
+.page-label{font-size:13.5px;color:var(--text3);padding-left:16px;border-left:1px solid var(--border)}
+.theme-btn{width:32px;height:32px;border-radius:6px;background:transparent;border:1px solid var(--border);color:var(--text2);display:grid;place-items:center}.theme-btn:hover{border-color:var(--gold)}
+.btn{display:inline-flex;align-items:center;gap:6px;padding:8px 16px;border-radius:6px;font-size:13.5px;font-weight:600;border:1px solid var(--border);background:var(--bg1);color:var(--text);cursor:pointer;transition:border-color .15s}
+.btn:hover{border-color:var(--gold)}.btn-gold{background:var(--gold);border-color:var(--gold);color:var(--black)}.btn-gold:hover{background:var(--gold-dk)}
+.btn-danger{color:#C0392B;border-color:#C0392B33}.btn-sm{padding:6px 12px;font-size:12.5px}
+.wrap{max-width:1100px;margin:0 auto;padding:28px}
+.stats-row{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));background:var(--border);border:1px solid var(--border);border-radius:8px;overflow:hidden;margin-bottom:22px}
+.stat-cell{background:var(--bg);padding:18px 22px;border-right:1px solid var(--border)}.stat-cell:last-child{border-right:none}
+.stat-lbl{font-size:11px;font-weight:600;letter-spacing:.1em;text-transform:uppercase;color:var(--text3);margin-bottom:6px}
+.stat-val{font-size:20px;font-weight:700}
+.toolbar{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:18px}
+.filter-tabs{display:flex;gap:2px;background:var(--bg1);border:1px solid var(--border);border-radius:6px;padding:3px}
+.ftab{background:transparent;border:none;color:var(--text3);padding:6px 13px;border-radius:4px;font-size:13px;font-weight:500;cursor:pointer}
+.ftab.active{background:var(--bg);color:var(--text);font-weight:600;box-shadow:0 1px 3px var(--shadow)}
+.tbl-wrap{border:1px solid var(--border);border-radius:8px;overflow:hidden;overflow-x:auto}
+table{width:100%;border-collapse:collapse;font-size:13.5px}
+thead th{background:var(--bg1);padding:11px 16px;text-align:left;font-size:11px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--text3);border-bottom:1px solid var(--border)}
+tbody td{padding:13px 16px;border-bottom:1px solid var(--border);vertical-align:middle}
+tbody tr:last-child td{border-bottom:none}
+tbody tr.rc{cursor:pointer}tbody tr.rc:hover{background:var(--bg1)}
+.mono{font-variant-numeric:tabular-nums;font-size:13px}.dim{color:var(--text3);font-size:12.5px}
+.badge{display:inline-block;padding:3px 9px;border-radius:4px;font-size:11.5px;font-weight:600;border:1px solid}
+.empty{padding:52px 20px;text-align:center;color:var(--text3);font-size:14px}.empty strong{display:block;color:var(--text);margin-bottom:4px}
+.overlay{position:fixed;inset:0;background:rgba(0,0,0,.45);display:none;align-items:flex-start;justify-content:center;z-index:60;padding:5vh 16px;overflow-y:auto}.overlay.open{display:flex}
+.modal{background:var(--bg);border:1px solid var(--border);border-radius:10px;width:100%;max-width:640px;padding:28px;box-shadow:0 8px 32px var(--shadow)}
+.modal h2{font-size:17px;font-weight:700;margin-bottom:20px}
+.field{margin-bottom:14px}.field label{display:block;font-size:11.5px;font-weight:600;letter-spacing:.07em;text-transform:uppercase;color:var(--text3);margin-bottom:6px}
+.field input,.field select{width:100%;background:var(--bg1);border:1px solid var(--border);border-radius:6px;color:var(--text);padding:9px 11px;font-size:14px;font-family:inherit}
+.field input:focus,.field select:focus{outline:none;border-color:var(--gold)}
+.f2{display:grid;grid-template-columns:1fr 1fr;gap:12px}.f3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px}
+@media(max-width:560px){.f2,.f3{grid-template-columns:1fr}}
+.modal-foot{display:flex;gap:10px;justify-content:flex-end;margin-top:20px;border-top:1px solid var(--border);padding-top:20px}
+.mfl{margin-right:auto}
+.item-row{display:grid;grid-template-columns:2fr 1fr 1fr auto;gap:8px;align-items:center;margin-bottom:8px}
+.item-row input{background:var(--bg);border:1px solid var(--border);border-radius:5px;color:var(--text);padding:6px 8px;font-size:13px;font-family:inherit;width:100%}
+#toasts{position:fixed;bottom:20px;right:20px;display:flex;flex-direction:column;gap:8px;z-index:90}
+.toast{background:var(--bg);border:1px solid var(--border);border-left:3px solid var(--gold);border-radius:7px;padding:11px 16px;font-size:13.5px;min-width:220px;box-shadow:0 4px 16px var(--shadow);animation:tin .2s ease}.toast.err{border-left-color:#C0392B}
+@keyframes tin{from{transform:translateX(12px);opacity:0}}
+.loading{padding:60px;text-align:center;color:var(--text3)}
+@media print{.topbar,.toolbar,.stats-row,.modal-foot{display:none}.overlay{position:static;background:none;padding:0}.modal{box-shadow:none;border:none;max-width:100%}}
+</style>
+</head>
+<body>
+<header class="topbar">
+  <div class="topbar-left">
+    <a class="brand-link" href="dashboard.html"><div class="brand-mark">AP</div><span class="brand-name">APM Metal Works</span></a>
+    <span class="page-label">Delivery Notes</span>
+  </div>
+  <div style="display:flex;align-items:center;gap:10px">
+    <button class="theme-btn" onclick="toggleTheme()">
+      <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="8" cy="8" r="3"/><path d="M8 1v1.5M8 13.5V15M1 8h1.5M13.5 8H15M3.05 3.05l1.06 1.06M11.89 11.89l1.06 1.06M3.05 12.95l1.06-1.06M11.89 4.11l1.06-1.06"/></svg>
+    </button>
+    <button class="btn btn-gold btn-sm" onclick="openDN()">+ New delivery note</button>
+  </div>
+</header>
+<div class="wrap">
+  <div class="stats-row">
+    <div class="stat-cell"><div class="stat-lbl">Total</div><div class="stat-val" id="stT">-</div></div>
+    <div class="stat-cell"><div class="stat-lbl">Pending</div><div class="stat-val" id="stP" style="color:var(--gold-dk)">-</div></div>
+    <div class="stat-cell"><div class="stat-lbl">Dispatched</div><div class="stat-val" id="stD" style="color:#E67E22">-</div></div>
+    <div class="stat-cell"><div class="stat-lbl">Delivered</div><div class="stat-val" id="stDel" style="color:#2D7D46">-</div></div>
+  </div>
+  <div class="toolbar">
+    <div class="filter-tabs">
+      <button class="ftab active" data-f="all" onclick="setF('all')">All</button>
+      <button class="ftab" data-f="pending" onclick="setF('pending')">Pending</button>
+      <button class="ftab" data-f="dispatched" onclick="setF('dispatched')">Dispatched</button>
+      <button class="ftab" data-f="delivered" onclick="setF('delivered')">Delivered</button>
+    </div>
+  </div>
+  <div id="listBody"><div class="loading">Loading...</div></div>
+</div>
+<div id="toasts"></div>
+<script>
+const SB_URL='https://spfztpokbpomqtiqgggz.supabase.co';
+const SB_KEY='sb_publishable_xPXU0xL_YaiWA6k9PWc0Xg_4QYeypNi';
+// Initialize with stored auth session so RLS blocks unauthenticated access
+const _sess=JSON.parse(sessionStorage.getItem('apm_auth')||'{}');
+const sb=supabase.createClient(SB_URL,SB_KEY,{
+  global:{headers:{Authorization:'Bearer '+(_sess.access_token||SB_KEY)}},
+  auth:{persistSession:false,autoRefreshToken:false}
+});
+const $=id=>document.getElementById(id);
+const esc=s=>(s??'').toString().replaceAll('&','&amp;').replaceAll('<','&lt;').replaceAll('>','&gt;').replaceAll('"','&quot;');
+const num=v=>Number(v)||0;
+const today=()=>new Date().toISOString().slice(0,10);
+const fmtDate=d=>d?new Date(d).toLocaleDateString('en-GB',{day:'numeric',month:'short',year:'numeric'}):'--';
+
+function toggleTheme(){const n=document.documentElement.getAttribute('data-theme')==='dark'?'light':'dark';document.documentElement.setAttribute('data-theme',n);localStorage.setItem('apm_theme',n);}
+function toast(m,e){const t=document.createElement('div');t.className='toast'+(e?' err':'');t.textContent=m;$('toasts').appendChild(t);setTimeout(()=>t.remove(),3800);}
+document.addEventListener('keydown',e=>{if(e.key==='Escape')closeModals();});
+
+let notes=[],workOrders=[],projects=[],filt='all',dnItems=[];
+
+const ST={pending:{l:'Pending',c:'#C8A96E'},dispatched:{l:'Dispatched',c:'#E67E22'},delivered:{l:'Delivered',c:'#2D7D46'},returned:{l:'Returned',c:'#C0392B'}};
+
+async function loadAll(){
+  const[dnR,woR,pR]=await Promise.all([
+    sb.from('apm_delivery_notes').select('*').order('created_at',{ascending:false}),
+    sb.from('apm_work_orders').select('id,wo_no,title,project_id').order('created_at',{ascending:false}),
+    sb.from('apm_projects').select('id,name,client').order('name'),
+  ]);
+  if(dnR.error){$('listBody').innerHTML='<div class="tbl-wrap"><div class="empty"><strong>Could not load</strong>Run scheduling_setup.sql in Supabase first.</div></div>';toast(dnR.error.message,1);return;}
+  notes=dnR.data||[];workOrders=woR.data||[];projects=pR.data||[];
+  renderStats();renderList();
+}
+function renderStats(){
+  $('stT').textContent=notes.length;
+  $('stP').textContent=notes.filter(n=>n.status==='pending').length;
+  $('stD').textContent=notes.filter(n=>n.status==='dispatched').length;
+  $('stDel').textContent=notes.filter(n=>n.status==='delivered').length;
+}
+function setF(f){filt=f;document.querySelectorAll('.ftab').forEach(t=>t.classList.toggle('active',t.dataset.f===f));renderList();}
+function renderList(){
+  let list=notes.slice();
+  if(filt!=='all')list=list.filter(n=>n.status===filt);
+  if(!list.length){$('listBody').innerHTML='<div class="tbl-wrap"><div class="empty"><strong>No delivery notes</strong>Create delivery notes with gate pass and driver details for shipments.</div></div>';return;}
+  const rows=list.map(n=>{
+    const st=ST[n.status]||ST.pending;
+    const items=(n.items||[]).length;
+    return`<tr class="rc" onclick="openDN('${n.id}')">
+      <td class="mono"><strong>${esc(n.dn_no||'--')}</strong></td>
+      <td><strong>${esc(n.client_name||'--')}</strong>${n.delivery_address?'<div class="dim">'+esc(n.delivery_address)+'</div>':''}</td>
+      <td class="dim">${items} item${items!==1?'s':''}</td>
+      <td class="dim">${esc(n.driver_name||'--')}${n.vehicle_no?'<div class="dim">'+esc(n.vehicle_no)+'</div>':''}</td>
+      <td class="mono dim">${fmtDate(n.delivery_date)}</td>
+      <td><span class="badge" style="color:${st.c};border-color:${st.c}44">${st.l}</span></td>
+    </tr>`;
+  }).join('');
+  $('listBody').innerHTML=`<div class="tbl-wrap"><table>
+    <thead><tr><th>DN No.</th><th>Client / Address</th><th>Items</th><th>Driver / Vehicle</th><th>Date</th><th>Status</th></tr></thead>
+    <tbody>${rows}</tbody></table></div>`;
+}
+function nextDNNo(){
+  const y=new Date().getFullYear(),p=`APM-DN-${y}-`;
+  const nums=notes.map(x=>x.dn_no).filter(n=>n&&n.startsWith(p)).map(n=>parseInt(n.slice(p.length),10)).filter(n=>!isNaN(n));
+  return p+String((nums.length?Math.max(...nums):0)+1).padStart(3,'0');
+}
+function openDN(id){
+  const n=id?notes.find(x=>x.id===id):null;
+  dnItems=n?.items?JSON.parse(JSON.stringify(n.items)):[{desc:'',qty:1,unit:'pcs'}];
+  const woOpts='<option value="">-- No work order --</option>'+workOrders.map(w=>`<option value="${w.id}" ${n?.work_order_id===w.id?'selected':''}>${esc(w.wo_no)} - ${esc(w.title)}</option>`).join('');
+  const projOpts='<option value="">-- No project --</option>'+projects.map(p=>`<option value="${p.id}" ${n?.project_id===p.id?'selected':''}>${esc(p.name)}</option>`).join('');
+  const m=document.createElement('div');m.className='overlay open';m.id='dnOverlay';
+  m.innerHTML=`<div class="modal">
+    <h2>${n?'Delivery Note '+esc(n.dn_no||''):'New Delivery Note'}</h2>
+    <input type="hidden" id="dnId" value="${n?.id||''}">
+    <div class="f2">
+      <div class="field"><label>Client name</label><input id="dnClient" value="${esc(n?.client_name||'')}" placeholder="Client"></div>
+      <div class="field"><label>Work order</label><select id="dnWO" onchange="onDNWOPick()">${woOpts}</select></div>
+    </div>
+    <div class="f2">
+      <div class="field"><label>Project</label><select id="dnProject">${projOpts}</select></div>
+      <div class="field"><label>Delivery date</label><input id="dnDate" type="date" value="${n?.delivery_date||today()}"></div>
+    </div>
+    <div class="field"><label>Delivery address</label><input id="dnAddr" value="${esc(n?.delivery_address||'')}" placeholder="Site / delivery address"></div>
+    <div class="f3">
+      <div class="field"><label>Driver name</label><input id="dnDriver" value="${esc(n?.driver_name||'')}" placeholder="optional"></div>
+      <div class="field"><label>Vehicle no.</label><input id="dnVehicle" value="${esc(n?.vehicle_no||'')}" placeholder="plate"></div>
+      <div class="field"><label>Gate pass no.</label><input id="dnGate" value="${esc(n?.gate_pass_no||'')}" placeholder="optional"></div>
+    </div>
+    <div style="font-size:12px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--text3);margin:8px 0 10px">Items delivered</div>
+    <table style="width:100%;border-collapse:collapse;font-size:13px;margin-bottom:8px">
+      <thead><tr style="background:var(--bg1)"><th style="padding:7px 8px;text-align:left;font-size:11px;color:var(--text3)">Description</th><th style="padding:7px 8px;font-size:11px;color:var(--text3)">Qty</th><th style="padding:7px 8px;font-size:11px;color:var(--text3)">Unit</th><th></th></tr></thead>
+      <tbody id="dnItemsBody"></tbody>
+    </table>
+    <button class="btn btn-sm" style="margin-bottom:14px;font-size:12px" onclick="addDNItem()">+ Add item</button>
+    <div class="f2">
+      <div class="field"><label>Status</label>
+        <select id="dnStatus">
+          <option value="pending" ${(n?.status||'pending')==='pending'?'selected':''}>Pending</option>
+          <option value="dispatched" ${n?.status==='dispatched'?'selected':''}>Dispatched</option>
+          <option value="delivered" ${n?.status==='delivered'?'selected':''}>Delivered</option>
+          <option value="returned" ${n?.status==='returned'?'selected':''}>Returned</option>
+        </select>
+      </div>
+      <div class="field"><label>Received by</label><input id="dnReceived" value="${esc(n?.received_by||'')}" placeholder="Name of receiver"></div>
+    </div>
+    <div class="field"><label>Note</label><input id="dnNote" value="${esc(n?.note||'')}" placeholder="optional"></div>
+    <div class="modal-foot">
+      ${n?'<button class="btn btn-danger btn-sm mfl" id="dnDel">Delete</button>':''}
+      <button class="btn btn-sm" onclick="closeModals()">Cancel</button>
+      ${n?'<button class="btn btn-sm" onclick="printDN()">Print</button>':''}
+      <button class="btn btn-gold btn-sm" onclick="saveDN()">Save</button>
+    </div>
+  </div>`;
+  document.body.appendChild(m);
+  m.addEventListener('click',e=>{if(e.target===m)closeModals();});
+  const del=m.querySelector('#dnDel');if(del&&id)del.onclick=()=>deleteDN(id);
+  renderDNItems();
+}
+function onDNWOPick(){
+  const wo=workOrders.find(w=>w.id===$('dnWO').value);
+  if(wo){
+    if(wo.project_id)$('dnProject').value=wo.project_id;
+    const proj=projects.find(p=>p.id===wo.project_id);
+    if(proj&&proj.client&&!$('dnClient').value)$('dnClient').value=proj.client;
+  }
+}
+function renderDNItems(){
+  const body=$('dnItemsBody');if(!body)return;
+  body.innerHTML=dnItems.map((it,i)=>`<tr>
+    <td><input value="${esc(it.desc||'')}" placeholder="e.g. Steel railing 12m" style="width:100%;background:var(--bg);border:1px solid var(--border);border-radius:5px;color:var(--text);padding:5px 7px;font-size:13px;font-family:inherit" oninput="dnItems[${i}].desc=this.value"></td>
+    <td><input type="number" value="${it.qty||1}" min="0" step="any" style="width:65px;background:var(--bg);border:1px solid var(--border);border-radius:5px;color:var(--text);padding:5px 7px;font-size:13px;font-family:inherit" oninput="dnItems[${i}].qty=+this.value"></td>
+    <td><input value="${esc(it.unit||'')}" placeholder="pcs" style="width:60px;background:var(--bg);border:1px solid var(--border);border-radius:5px;color:var(--text);padding:5px 7px;font-size:13px;font-family:inherit" oninput="dnItems[${i}].unit=this.value"></td>
+    <td><button onclick="dnItems.splice(${i},1);renderDNItems()" style="background:none;border:none;color:var(--text3);font-size:16px;cursor:pointer">&times;</button></td>
+  </tr>`).join('');
+}
+function addDNItem(){dnItems.push({desc:'',qty:1,unit:'pcs'});renderDNItems();}
+async function saveDN(){
+  const client=$('dnClient').value.trim();if(!client)return toast('Client name required',1);
+  const clean=dnItems.filter(i=>i.desc.trim());
+  if(!clean.length)return toast('Add at least one item',1);
+  const id=$('dnId').value;
+  const rec={
+    client_name:client,
+    work_order_id:$('dnWO').value||null,
+    project_id:$('dnProject').value||null,
+    delivery_date:$('dnDate').value||today(),
+    delivery_address:$('dnAddr').value.trim()||null,
+    driver_name:$('dnDriver').value.trim()||null,
+    vehicle_no:$('dnVehicle').value.trim()||null,
+    gate_pass_no:$('dnGate').value.trim()||null,
+    items:clean,
+    status:$('dnStatus').value,
+    received_by:$('dnReceived').value.trim()||null,
+    note:$('dnNote').value.trim()||null,
+  };
+  if(!id)rec.dn_no=nextDNNo();
+  const{error}=await(id?sb.from('apm_delivery_notes').update(rec).eq('id',id):sb.from('apm_delivery_notes').insert(rec));
+  if(error)return toast(error.message,1);
+  closeModals();toast(id?'Updated':'Delivery note created');loadAll();
+APM_SEC.init('Delivery Notes');
+
+// Log module access
+(async function logAccess(){
+  try{
+    const _s=JSON.parse(sessionStorage.getItem('apm_auth')||'{}');
+    if(!_s.user||!_s.access_token)return;
+    const _lsb=supabase.createClient(
+      'https://spfztpokbpomqtiqgggz.supabase.co',
+      'sb_publishable_xPXU0xL_YaiWA6k9PWc0Xg_4QYeypNi',
+      {global:{headers:{Authorization:'Bearer '+_s.access_token}},auth:{persistSession:false,autoRefreshToken:false}}
+    );
+    await _lsb.from('apm_access_log').insert({user_name:_s.user,module:'Delivery Notes',action:'opened'});
+  }catch(e){}
+})();
+
+}
+async function deleteDN(id){
+  if(!confirm('Delete this delivery note?'))return;
+  const{error}=await sb.from('apm_delivery_notes').delete().eq('id',id);
+  if(error)return toast(error.message,1);
+  closeModals();toast('Deleted');loadAll();
+}
+function printDN(){window.print();}
+function closeModals(){document.querySelectorAll('.overlay').forEach(o=>{if(o.id==='dnOverlay')o.remove();});}
+loadAll();
+</script>
+
+<!-- Security watermark - shows user name on every page -->
+<div id="secWatermark" style="position:fixed;bottom:12px;left:16px;font-size:11px;color:var(--text3,#888);opacity:0.4;pointer-events:none;user-select:none;z-index:1000;font-family:monospace"></div>
+<script>
+(function(){
+  var s=JSON.parse(sessionStorage.getItem('apm_auth')||'{}');
+  var el=document.getElementById('secWatermark');
+  if(el&&s.user){
+    var now=new Date();
+    el.textContent=s.user+' - '+now.toLocaleDateString('en-GB')+' '+now.toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit'});
+  }
+})();
+</script>
+</body>
+</html>

@@ -1,0 +1,163 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>APM Metal Works</title>
+<style>
+:root {
+  --gold: #C8A96E; --gold-dk: #A8874E; --black: #0A0A0A; --white: #FFFFFF;
+  --bg: #FFFFFF; --bg1: #F5F5F5; --bg2: #EBEBEB;
+  --border: #D8D8D8; --text: #0A0A0A; --text2: #444444; --text3: #888888;
+  --shadow: rgba(0,0,0,.07);
+}
+[data-theme="dark"] {
+  --bg: #0A0A0A; --bg1: #141414; --bg2: #1E1E1E;
+  --border: #2A2A2A; --text: #F0F0F0; --text2: #AAAAAA; --text3: #666666;
+  --shadow: rgba(0,0,0,.35);
+}
+*, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+body {
+  background: var(--bg); color: var(--text);
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  min-height: 100vh; display: grid; place-items: center;
+  -webkit-font-smoothing: antialiased; transition: background .2s, color .2s;
+}
+.shell { width: 100%; max-width: 380px; padding: 24px; }
+
+/* logo */
+.logo { display: flex; flex-direction: column; align-items: center; gap: 12px; margin-bottom: 36px; }
+.mark {
+  width: 48px; height: 48px; border-radius: 10px; background: var(--gold);
+  display: grid; place-items: center; font-size: 17px; font-weight: 800;
+  color: var(--black); letter-spacing: -.02em;
+}
+.logo-text { text-align: center; }
+.logo-text strong { display: block; font-size: 18px; font-weight: 700; letter-spacing: -.02em; }
+.logo-text span { font-size: 12px; color: var(--text3); letter-spacing: .1em; text-transform: uppercase; margin-top: 2px; display: block; }
+
+/* card */
+.card {
+  background: var(--bg); border: 1px solid var(--border); border-radius: 10px;
+  padding: 32px; box-shadow: 0 4px 20px var(--shadow);
+}
+.field { margin-bottom: 14px; }
+.field label { display: block; font-size: 11.5px; font-weight: 600; letter-spacing: .08em; text-transform: uppercase; color: var(--text3); margin-bottom: 7px; }
+.field input {
+  width: 100%; padding: 11px 13px; border: 1px solid var(--border); border-radius: 6px;
+  background: var(--bg1); color: var(--text); font-size: 14.5px;
+  font-family: inherit; transition: border-color .15s;
+}
+.field input:focus { outline: none; border-color: var(--gold); }
+.field input.err { border-color: #C0392B; }
+.error-msg {
+  display: none; background: #FDF2F2; border: 1px solid #F5C6C6;
+  border-radius: 6px; padding: 10px 13px; font-size: 13px; color: #922B21;
+  margin-bottom: 16px;
+}
+[data-theme="dark"] .error-msg { background: #1A0A0A; border-color: #5C1A1A; color: #F08080; }
+.error-msg.show { display: block; }
+.submit-btn {
+  width: 100%; padding: 12px; background: var(--gold); border: none; border-radius: 6px;
+  color: var(--black); font-size: 14.5px; font-weight: 700; cursor: pointer;
+  transition: background .15s; margin-top: 4px;
+}
+.submit-btn:hover { background: var(--gold-dk); }
+.submit-btn:disabled { opacity: .5; cursor: not-allowed; }
+
+/* theme toggle */
+.toggle-row { display: flex; justify-content: center; margin-top: 20px; }
+.theme-btn {
+  background: none; border: 1px solid var(--border); border-radius: 6px;
+  color: var(--text3); padding: 6px 14px; font-size: 12.5px; cursor: pointer;
+  transition: border-color .15s;
+}
+.theme-btn:hover { border-color: var(--gold); color: var(--text); }
+
+@keyframes shake {
+  0%,100%{transform:translateX(0)} 20%{transform:translateX(-6px)} 40%{transform:translateX(6px)} 60%{transform:translateX(-4px)} 80%{transform:translateX(4px)}
+}
+.card.shake { animation: shake .35s ease; }
+</style>
+</head>
+<body>
+<div class="shell">
+  <div class="logo">
+    <div class="mark">AP</div>
+    <div class="logo-text">
+      <strong>APM Metal Works</strong>
+      <span>Enterprise Suite</span>
+    </div>
+  </div>
+
+  <div class="card" id="card">
+    <form id="form" onsubmit="attempt(event)">
+      <div class="error-msg" id="errMsg">Incorrect password. Try again.</div>
+      <div class="field">
+        <label>Your name</label>
+        <input id="uname" type="text" autocomplete="name" autocapitalize="words" spellcheck="false" required placeholder="e.g. Mikael, Grandma, Ahmed">
+      </div>
+      <div class="field">
+        <label>Password</label>
+        <input id="pw" type="password" autocomplete="current-password" required placeholder="Password">
+      </div>
+      <button class="submit-btn" id="submitBtn" type="submit">Sign in</button>
+    </form>
+  </div>
+
+  <div class="toggle-row">
+    <button class="theme-btn" onclick="toggleTheme()">Toggle light / dark</button>
+  </div>
+</div>
+
+<script>
+// App credentials - signs into Supabase Auth for real security
+const APP_EMAIL = 'apm@apmmetalworks.com';
+const SESSION_KEY = 'apm_auth';
+const TTL = 10 * 60 * 60 * 1000; // 10 hours
+
+// Apply saved theme
+const saved = localStorage.getItem('apm_theme') || 'light';
+document.documentElement.setAttribute('data-theme', saved);
+
+function toggleTheme() {
+  const cur = document.documentElement.getAttribute('data-theme');
+  const next = cur === 'dark' ? 'light' : 'dark';
+  document.documentElement.setAttribute('data-theme', next);
+  localStorage.setItem('apm_theme', next);
+}
+
+// Already logged in?
+try {
+  const s = JSON.parse(sessionStorage.getItem(SESSION_KEY));
+  if (s && Date.now() - s.ts < TTL) window.location.href = 'dashboard.html';
+} catch(e){}
+
+function attempt(e) {
+  e.preventDefault();
+  const u = document.getElementById('uname').value.trim();
+  const p = document.getElementById('pw').value;
+  const btn = document.getElementById('submitBtn');
+  btn.disabled = true; btn.textContent = 'Signing in--';
+  setTimeout(() => {
+    const ok = u === DASHBOARD_CREDS.user && p === DASHBOARD_CREDS.pass;
+    if (ok) {
+      sessionStorage.setItem(SESSION_KEY, JSON.stringify({ user: u, ts: Date.now() }));
+      window.location.href = 'dashboard.html';
+    } else {
+      btn.disabled = false; btn.textContent = 'Sign in';
+      document.getElementById('errMsg').classList.add('show');
+      ['uname','pw'].forEach(id => document.getElementById(id).classList.add('err'));
+      document.getElementById('pw').value = '';
+      const card = document.getElementById('card');
+      card.classList.remove('shake'); void card.offsetWidth; card.classList.add('shake');
+      setTimeout(() => ['uname','pw'].forEach(id => document.getElementById(id).classList.remove('err')), 1500);
+    }
+  }, 250);
+}
+['uname','pw'].forEach(id =>
+  document.getElementById(id).addEventListener('input', () => document.getElementById('errMsg').classList.remove('show'))
+);
+</script>
+</body>
+</html>
