@@ -1,0 +1,829 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>Admin -- APM Metal Works</title>
+<script>
+(function(){
+  var K='apm_auth',T=10*60*60*1000;
+  try{var s=JSON.parse(sessionStorage.getItem(K));if(!s||Date.now()-s.ts>T)throw 0;}
+  catch(e){window.location.href='login.html';return;}
+})();
+(function(){var t=localStorage.getItem('apm_theme')||'light';document.documentElement.setAttribute('data-theme',t);})();
+</script>
+<style>
+#adminGate{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;background:var(--bg,#fff);z-index:9999;font-family:'Inter',-apple-system,sans-serif}
+#adminGate .gc{width:100%;max-width:380px;padding:28px;border:1px solid var(--border,#d8d8d8);border-radius:12px;box-shadow:0 8px 32px rgba(0,0,0,.1)}
+#adminGate .logo{width:44px;height:44px;border-radius:10px;background:#C8A96E;display:grid;place-items:center;font-size:18px;font-weight:800;color:#0A0A0A;margin-bottom:16px}
+#adminGate h2{font-size:19px;font-weight:700;margin-bottom:4px}
+#adminGate p{font-size:13px;color:#888;margin-bottom:22px}
+#adminGate label{display:block;font-size:11px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:#888;margin-bottom:7px}
+#adminGate input{width:100%;padding:11px 13px;border:1px solid #D8D8D8;border-radius:6px;background:#F5F5F5;color:#0A0A0A;font-size:14px;font-family:inherit;box-sizing:border-box}
+#adminGate input:focus{outline:none;border-color:#C8A96E}
+#adminGate input.err{border-color:#C0392B;animation:shake .3s}
+#adminGate .errmsg{display:none;color:#C0392B;font-size:12.5px;margin-top:8px}
+#adminGate .errmsg.show{display:block}
+#adminGate button{width:100%;margin-top:14px;padding:12px;background:#C8A96E;border:none;border-radius:6px;color:#0A0A0A;font-size:14px;font-weight:700;cursor:pointer}
+#adminGate button:hover{background:#A8874E}
+#adminGate button:disabled{opacity:.6;cursor:not-allowed}
+@keyframes shake{0%,100%{transform:translateX(0)}25%{transform:translateX(-6px)}75%{transform:translateX(6px)}}
+</style>
+<div id="adminGate">
+  <div class="gc">
+    <div class="logo">AP</div>
+    <h2>Admin Panel</h2>
+    <p>Enter the admin password to continue.</p>
+    <label>Password</label>
+    <input id="adminPwInput" type="password" placeholder="Admin password">
+    <div class="errmsg" id="adminPwErr">Incorrect password.</div>
+    <button id="adminPwBtn" onclick="checkAdminPw()">Enter</button>
+  </div>
+</div>
+<script>
+(function(){
+  // Check if already authenticated this session
+  if(sessionStorage.getItem('apm_admin_auth')==='1'){
+    document.addEventListener('DOMContentLoaded',function(){
+      var g=document.getElementById('adminGate');if(g)g.remove();
+    });
+    return;
+  }
+  document.addEventListener('DOMContentLoaded',function(){
+    document.getElementById('adminPwInput').addEventListener('keydown',function(e){
+      if(e.key==='Enter')checkAdminPw();
+    });
+    document.getElementById('adminPwInput').addEventListener('input',function(){
+      this.classList.remove('err');
+      document.getElementById('adminPwErr').classList.remove('show');
+    });
+    setTimeout(function(){document.getElementById('adminPwInput').focus();},80);
+  });
+})();
+function checkAdminPw(){
+  var pw=document.getElementById('adminPwInput').value;
+  var btn=document.getElementById('adminPwBtn');
+  btn.disabled=true;btn.textContent='Checking...';
+  fetch('https://spfztpokbpomqtiqgggz.supabase.co/rest/v1/apm_settings?key=eq.admin_pass&select=value',{
+    headers:{'apikey':'sb_publishable_xPXU0xL_YaiWA6k9PWc0Xg_4QYeypNi','Authorization':'Bearer sb_publishable_xPXU0xL_YaiWA6k9PWc0Xg_4QYeypNi'}
+  }).then(function(r){return r.json();}).then(function(d){
+    var correct=d&&d[0]&&d[0].value;
+    if(correct&&pw===correct){
+      sessionStorage.setItem('apm_admin_auth','1');
+      document.getElementById('adminGate').remove();
+    }else{
+      var inp=document.getElementById('adminPwInput');
+      inp.classList.add('err');inp.value='';inp.focus();
+      document.getElementById('adminPwErr').classList.add('show');
+    }
+    btn.disabled=false;btn.textContent='Enter';
+  }).catch(function(){
+    document.getElementById('adminPwErr').textContent='Could not connect to server.';
+    document.getElementById('adminPwErr').classList.add('show');
+    btn.disabled=false;btn.textContent='Enter';
+  });
+}
+</script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+:root{--gold:#C8A96E;--gold-dk:#A8874E;--black:#0A0A0A;--bg:#FFFFFF;--bg1:#F5F5F5;--bg2:#EBEBEB;--border:#D8D8D8;--text:#0A0A0A;--text3:#888888;--shadow:rgba(0,0,0,.07)}
+[data-theme="dark"]{--bg:#0A0A0A;--bg1:#141414;--bg2:#1E1E1E;--border:#2A2A2A;--text:#F0F0F0;--text3:#666666}
+*,*::before,*::after{margin:0;padding:0;box-sizing:border-box}
+body{background:var(--bg);color:var(--text);font-family:'Inter',-apple-system,sans-serif;min-height:100vh}
+button{font-family:inherit;cursor:pointer}
+.topbar{display:flex;align-items:center;justify-content:space-between;padding:0 28px;height:56px;border-bottom:1px solid var(--border);background:var(--bg);position:sticky;top:0;z-index:40}
+.brand-link{display:flex;align-items:center;gap:10px;text-decoration:none;color:var(--text)}
+.brand-mark{width:30px;height:30px;border-radius:6px;background:var(--gold);display:grid;place-items:center;font-size:13px;font-weight:800;color:var(--black)}
+.brand-name{font-size:14px;font-weight:700}
+.page-label{font-size:13.5px;color:var(--text3);padding-left:16px;border-left:1px solid var(--border)}
+.theme-btn{width:32px;height:32px;border-radius:6px;background:transparent;border:1px solid var(--border);color:var(--text3);display:grid;place-items:center}
+.btn{display:inline-flex;align-items:center;padding:8px 16px;border-radius:6px;font-size:13.5px;font-weight:600;border:1px solid var(--border);background:var(--bg1);color:var(--text);cursor:pointer}
+.btn:hover{border-color:var(--gold)}.btn-gold{background:var(--gold);border-color:var(--gold);color:var(--black)}.btn-gold:hover{background:var(--gold-dk)}
+.btn-danger{color:#C0392B;border-color:#C0392B33}.btn-sm{padding:6px 12px;font-size:12.5px}
+.wrap{max-width:1100px;margin:0 auto;padding:28px}
+.tabs{display:flex;gap:2px;background:var(--bg1);border:1px solid var(--border);border-radius:8px;padding:3px;width:fit-content;margin-bottom:24px}
+.tab{background:transparent;border:none;color:var(--text3);padding:8px 20px;border-radius:6px;font-size:14px;font-weight:500;cursor:pointer}
+.tab.active{background:var(--bg);color:var(--text);font-weight:700;box-shadow:0 1px 3px var(--shadow)}
+.card{border:1px solid var(--border);border-radius:10px;padding:24px;background:var(--bg);margin-bottom:20px}
+.card h3{font-size:15px;font-weight:700;margin-bottom:16px}
+.field{margin-bottom:14px}.field label{display:block;font-size:11.5px;font-weight:600;letter-spacing:.07em;text-transform:uppercase;color:var(--text3);margin-bottom:6px}
+.field input{width:100%;background:var(--bg1);border:1px solid var(--border);border-radius:6px;color:var(--text);padding:9px 11px;font-size:14px;font-family:inherit}
+.field input:focus{outline:none;border-color:var(--gold)}
+.f2{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.f3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px}
+/* Test results */
+.test-grid{display:flex;flex-direction:column;gap:6px}
+.test-row{display:flex;align-items:center;gap:10px;padding:10px 14px;border-radius:7px;font-size:13.5px;border:1px solid var(--border)}
+.test-row.pass{border-color:#2D7D4644;background:rgba(45,125,70,.04)}
+.test-row.fail{border-color:#C0392B44;background:rgba(192,57,43,.04)}
+.test-row.running{border-color:#C8A96E44;background:rgba(200,169,110,.04)}
+.test-row.skip{border-color:var(--border);opacity:.6}
+.test-icon{font-size:16px;flex:none;width:22px;text-align:center}
+.test-name{flex:1;font-weight:600}
+.test-detail{font-size:12px;color:var(--text3);margin-left:auto}
+.test-error{font-size:12px;color:#C0392B;margin-top:4px;padding-left:32px;word-break:break-all}
+.progress-bar{height:8px;background:var(--bg2);border-radius:4px;overflow:hidden;margin-bottom:20px}
+.progress-bar-fill{height:100%;background:var(--gold);border-radius:4px;transition:width .3s}
+.summary-row{display:flex;gap:24px;margin-bottom:20px;flex-wrap:wrap}
+.sum-cell{text-align:center}.sum-cell .v{font-size:28px;font-weight:700}.sum-cell .l{font-size:12px;color:var(--text3)}
+/* Password manager */
+.pw-row{display:flex;align-items:center;gap:10px;padding:12px 16px;border:1px solid var(--border);border-radius:8px;margin-bottom:8px}
+.pw-module{font-weight:600;font-size:14px;flex:1}
+.pw-current{font-family:monospace;font-size:13px;background:var(--bg1);padding:6px 10px;border-radius:5px;border:1px solid var(--border);color:var(--text3)}
+.pw-input{background:var(--bg1);border:1px solid var(--border);border-radius:5px;color:var(--text);padding:6px 10px;font-size:13px;font-family:monospace;width:140px}
+.pw-input:focus{outline:none;border-color:var(--gold)}
+#toasts{position:fixed;bottom:20px;right:20px;display:flex;flex-direction:column;gap:8px;z-index:90}
+.toast{background:var(--bg);border:1px solid var(--border);border-left:3px solid var(--gold);border-radius:7px;padding:11px 16px;font-size:13.5px;box-shadow:0 4px 16px var(--shadow);animation:tin .2s ease}.toast.err{border-left-color:#C0392B}
+@keyframes tin{from{transform:translateX(12px);opacity:0}}
+</style>
+</head>
+<body>
+<header class="topbar">
+  <div style="display:flex;align-items:center;gap:16px">
+    <a class="brand-link" href="dashboard.html"><div class="brand-mark">AP</div><span class="brand-name">APM Metal Works</span></a>
+    <span class="page-label">Admin Panel</span>
+  </div>
+  <button class="theme-btn" onclick="toggleTheme()">
+    <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="8" cy="8" r="3"/><path d="M8 1v1.5M8 13.5V15M1 8h1.5M13.5 8H15M3.05 3.05l1.06 1.06M11.89 11.89l1.06 1.06M3.05 12.95l1.06-1.06M11.89 4.11l1.06-1.06"/></svg>
+  </button>
+</header>
+
+<div class="wrap">
+  <div class="tabs">
+    <button class="tab active" onclick="showTab('test')">Crash Test</button>
+    <button class="tab" onclick="showTab('passwords')">Password Manager</button>
+    <button class="tab" onclick="showTab('log')">Access Log</button>
+    <button class="tab" onclick="showTab('security')">Security</button>
+  </div>
+
+  <!-- CRASH TEST TAB -->
+  <div id="tabTest">
+    <div class="card">
+      <h3>ERP System Crash Test</h3>
+      <p style="font-size:13.5px;color:var(--text3);margin-bottom:18px">Tests every table, every insert, every update, and every delete across the entire ERP. Shows exactly what works and what's broken.</p>
+      <div style="display:flex;gap:10px;flex-wrap:wrap">
+        <button class="btn btn-gold" onclick="runAllTests()">Run all tests</button>
+        <button class="btn btn-sm" onclick="runAllTests('tables')">Tables only</button>
+        <button class="btn btn-sm" onclick="runAllTests('crud')">CRUD only</button>
+        <button class="btn btn-sm" id="copyBtn" style="display:none" onclick="copyErrors()">Copy errors for Claude</button>
+      </div>
+    </div>
+
+    <div id="progressWrap" style="display:none" class="card">
+      <div style="display:flex;justify-content:space-between;margin-bottom:8px">
+        <span id="progressLabel" style="font-size:13.5px;font-weight:600">Running tests...</span>
+        <span id="progressPct" style="font-size:13.5px;color:var(--text3)">0%</span>
+      </div>
+      <div class="progress-bar"><div class="progress-bar-fill" id="progressFill" style="width:0%"></div></div>
+      <div class="summary-row" id="summaryRow" style="display:none">
+        <div class="sum-cell"><div class="v" id="sumPass" style="color:#2D7D46">0</div><div class="l">Passed</div></div>
+        <div class="sum-cell"><div class="v" id="sumFail" style="color:#C0392B">0</div><div class="l">Failed</div></div>
+        <div class="sum-cell"><div class="v" id="sumSkip" style="color:#888">0</div><div class="l">Skipped</div></div>
+        <div class="sum-cell"><div class="v" id="sumMs">0</div><div class="l">ms total</div></div>
+      </div>
+    </div>
+
+    <div id="testResults" class="test-grid"></div>
+  </div>
+
+  <!-- ACCESS LOG TAB -->
+  <div id="tabLog" style="display:none">
+    <div class="card">
+      <h3>Access log</h3>
+      <p style="font-size:13.5px;color:var(--text3);margin-bottom:18px">Every login and module access, with the name the person entered. If you see a name you don't recognize - someone got in.</p>
+      <div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:18px">
+        <button class="btn btn-gold btn-sm" onclick="loadLog()">Refresh</button>
+        <button class="btn btn-sm btn-danger" onclick="clearLog()">Clear log</button>
+
+      </div>
+      <div id="logContent"><div style="color:var(--text3);padding:30px 0;text-align:center">Click Refresh to load the log.</div></div>
+    </div>
+  </div>
+
+  <!-- SECURITY TAB -->
+  <div id="tabSecurity" style="display:none">
+    <div class="card">
+      <h3>Known users</h3>
+      <p style="font-size:13.5px;color:var(--text3);margin-bottom:14px">List everyone who is allowed to log in. Anyone logging in with a name NOT on this list will be flagged immediately in the access log.</p>
+      <div class="field"><label>Authorized names (comma separated, exact as they type at login)</label>
+        <input id="knownUsersInput" placeholder="e.g. Mikael, Grandma, Ahmed, Mohammed">
+      </div>
+      <button class="btn btn-gold btn-sm" onclick="saveKnownUsers()">Save</button>
+      <div id="knownUsersNote" style="font-size:12px;color:var(--text3);margin-top:10px"></div>
+    </div>
+
+    <div class="card">
+      <h3>Read-only permissions</h3>
+      <p style="font-size:13.5px;color:var(--text3);margin-bottom:18px">Set specific users to read-only mode on specific modules. They can view data but can't edit, save, or delete anything.</p>
+      <div id="permList"><div style="color:var(--text3);padding:20px 0;text-align:center">Loading...</div></div>
+      <div style="border-top:1px solid var(--border);padding-top:16px;margin-top:4px">
+        <div style="font-size:12px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--text3);margin-bottom:12px">Add restriction</div>
+        <div class="f3">
+          <div class="field"><label>User name</label><input id="permUser" placeholder="Exact name they type at login"></div>
+          <div class="field"><label>Module</label>
+            <select id="permModule">
+              <option value="CRM">CRM</option>
+              <option value="Quotations">Quotations</option>
+              <option value="Invoicing">Invoicing</option>
+              <option value="Inventory">Inventory</option>
+              <option value="HR">HR</option>
+              <option value="Cost Manager">Cost Manager</option>
+              <option value="Purchase Orders">Purchase Orders</option>
+              <option value="Reporting">Reporting</option>
+              <option value="Work Orders">Work Orders</option>
+              <option value="Quality Inspection">Quality Inspection</option>
+              <option value="All modules">All modules</option>
+            </select>
+          </div>
+          <div class="field"><label>Access level</label>
+            <select id="permLevel">
+              <option value="readonly">Read-only (view only)</option>
+              <option value="noexport">Can edit but no export/print</option>
+              <option value="full">Full access</option>
+            </select>
+          </div>
+        </div>
+        <button class="btn btn-gold btn-sm" onclick="addPermission()">Add restriction</button>
+      </div>
+    </div>
+
+    <div class="card">
+      <h3>Anomaly detection</h3>
+      <p style="font-size:13.5px;color:var(--text3);margin-bottom:18px">Automatically flags suspicious behavior in the access log. Flagged entries show in red.</p>
+      <div id="anomalySettings"><div style="color:var(--text3);padding:20px 0;text-align:center">Loading...</div></div>
+    </div>
+
+    <div class="card">
+      <h3>Watermark decoder</h3>
+      <p style="font-size:13.5px;color:var(--text3);margin-bottom:14px">If data leaks to a competitor, paste a sample here and it will tell you which employee's session it came from.</p>
+      <div class="field"><label>Paste the leaked content</label><textarea id="wmPaste" rows="4" style="width:100%;background:var(--bg1);border:1px solid var(--border);border-radius:6px;color:var(--text);padding:9px 11px;font-size:13px;font-family:inherit;resize:vertical" placeholder="Paste any text or content you received from a competitor..."></textarea></div>
+      <button class="btn btn-gold btn-sm" onclick="decodeWatermark()">Find the source</button>
+      <div id="wmResult" style="margin-top:14px"></div>
+    </div>
+  </div>
+
+  <!-- PASSWORD MANAGER TAB -->
+  <div id="tabPasswords" style="display:none">
+    <div class="card">
+      <h3>Module passwords</h3>
+      <p style="font-size:13.5px;color:var(--text3);margin-bottom:18px">Change any module password. Takes effect immediately -- no file upload needed.</p>
+      <div id="pwList"><div style="color:var(--text3);padding:20px 0;text-align:center">Loading...</div></div>
+      <div style="margin-top:18px;padding-top:18px;border-top:1px solid var(--border);display:flex;gap:10px">
+        <button class="btn btn-gold" onclick="saveAllPasswords()">Save all changes</button>
+        <button class="btn btn-sm" onclick="loadPasswords()">Refresh</button>
+      </div>
+    </div>
+
+    <div class="card">
+      <h3>Admin panel password</h3>
+      <p style="font-size:13.5px;color:var(--text3);margin-bottom:16px">Password to enter this admin panel. Stored in Supabase -- never visible in code.</p>
+      <div class="f2">
+        <div class="field"><label>New admin password</label><input id="adminPwNew" type="password" placeholder="Enter new password"></div>
+        <div class="field"><label>Confirm</label><input id="adminPwConfirm" type="password" placeholder="Confirm new password"></div>
+      </div>
+      <button class="btn btn-gold btn-sm" onclick="saveAdminPassword()">Update admin password</button>
+    </div>
+
+    <div class="card">
+      <h3>Main login password</h3>
+      <p style="font-size:13.5px;color:var(--text3);margin-bottom:16px">The password on the main login screen. Default: <code>apm2026</code></p>
+      <div class="f2">
+        <div class="field"><label>New login password</label><input id="loginPwNew" type="password" placeholder="Enter new password"></div>
+        <div class="field"><label>Confirm</label><input id="loginPwConfirm" type="password" placeholder="Confirm new password"></div>
+      </div>
+      <button class="btn btn-sm" onclick="saveLoginPassword()">Update login password</button>
+    </div>
+  </div>
+</div>
+<div id="toasts"></div>
+
+<script>
+const SB_URL='https://spfztpokbpomqtiqgggz.supabase.co';
+const SB_KEY='sb_publishable_xPXU0xL_YaiWA6k9PWc0Xg_4QYeypNi';
+const sb=supabase.createClient(SB_URL,SB_KEY);
+const $=id=>document.getElementById(id);
+const esc=s=>(s??'').toString().replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+
+function toggleTheme(){const n=document.documentElement.getAttribute('data-theme')==='dark'?'light':'dark';document.documentElement.setAttribute('data-theme',n);localStorage.setItem('apm_theme',n);}
+function toast(m,e){const t=document.createElement('div');t.className='toast'+(e?' err':'');t.textContent=m;$('toasts').appendChild(t);setTimeout(()=>t.remove(),3800);}
+
+function showTab(t){
+  $('tabTest').style.display=t==='test'?'':'none';
+  $('tabPasswords').style.display=t==='passwords'?'':'none';
+  $('tabLog').style.display=t==='log'?'':'none';
+  $('tabSecurity').style.display=t==='security'?'':'none';
+  document.querySelectorAll('.tab').forEach((b,i)=>b.classList.toggle('active',
+    (i===0&&t==='test')||(i===1&&t==='passwords')||(i===2&&t==='log')||(i===3&&t==='security')));
+  if(t==='passwords')loadPasswords();
+  if(t==='log')loadLog();
+  if(t==='security'){loadPermissions();loadAnomalySettings();loadKnownUsers();}
+}
+
+// ================================================================
+// CRASH TEST ENGINE
+// ================================================================
+const TABLES = [
+  // Core tables that should exist
+  {name:'apm_settings',        label:'Settings', pk:'key'},
+  {name:'crm_contacts',        label:'CRM Contacts'},
+  {name:'crm_leads',           label:'CRM Leads'},
+  {name:'crm_projects',        label:'CRM Projects'},
+  {name:'crm_project_contacts',label:'CRM Project Contacts'},
+  {name:'apm_projects',        label:'Cost Manager Projects'},
+  {name:'apm_boq',             label:'BOQ'},
+  {name:'apm_suppliers',       label:'Suppliers'},
+  {name:'apm_costs',           label:'Cost Entries'},
+  {name:'apm_purchase_requests',label:'Purchase Requests'},
+  {name:'quotes',              label:'Quotations'},
+  {name:'apm_estimations',     label:'Estimations'},
+  {name:'invoices',            label:'Invoices'},
+  {name:'supplier_invoices',   label:'Supplier Bills'},
+  {name:'apm_credit_notes',    label:'Credit Notes'},
+  {name:'inventory',           label:'Inventory'},
+  {name:'inventory_movements', label:'Stock Movements'},
+  {name:'apm_material_certs',  label:'Material Certificates'},
+  {name:'employees',           label:'Employees'},
+  {name:'leave_requests',      label:'Leave Requests'},
+  {name:'overtime',            label:'Overtime'},
+  {name:'eos_records',         label:'End of Service'},
+  {name:'apm_insurances',      label:'Insurance Policies'},
+  {name:'apm_purchase_orders', label:'Purchase Orders'},
+  {name:'apm_rfqs',            label:'RFQ'},
+  {name:'apm_rfq_quotes',      label:'RFQ Quotes'},
+  {name:'apm_subcontract_orders',label:'Subcontract Orders'},
+  {name:'apm_work_orders',     label:'Work Orders'},
+  {name:'apm_job_cards',       label:'Job Cards'},
+  {name:'apm_quality_inspections',label:'Quality Inspections'},
+  {name:'apm_workstations',    label:'Workstations'},
+  {name:'apm_schedule',        label:'Production Schedule'},
+  {name:'apm_delivery_notes',  label:'Delivery Notes'},
+  {name:'crm_activities',       label:'CRM Activities'},
+  {name:'apm_audit',            label:'Audit Log'},
+  {name:'inventory_scrap',      label:'Inventory Scrap'},
+  {name:'apm_user_permissions', label:'User Permissions'},
+  {name:'apm_anomaly_settings', label:'Anomaly Settings', pk:'key'},
+  {name:'apm_watermarks',       label:'Watermarks'},
+  {name:'apm_access_log',       label:'Access Log'},
+];
+
+const COL_TESTS = [
+  {table:'invoices',   cols:['tax_invoice_no','client_vat_no','lpo_reference','line_items','payments']},
+  {table:'inventory',  cols:['location','grade','dimensions','weight_per_unit','min_stock_level','last_purchase_price']},
+  {table:'employees',  cols:['emp_type','nationality','passport_no','iqama_expiry','permit_expiry','probation_end','iban','emergency_contact','passport_file','insurance_expiry']},
+  {table:'quotes',     cols:['payment_terms','delivery_address','rejection_reason','deadline','sent_via']},
+  {table:'crm_contacts',cols:['title','whatsapp','nationality']},
+  {table:'crm_leads',  cols:['probability','follow_up_date','competitor','channel']},
+  {table:'apm_purchase_orders',cols:['lpo_no','payment_terms','delivery_address']},
+  {table:'apm_credit_notes',cols:['payment_method','subtotal','vat']},
+  {table:'apm_work_orders',cols:['quote_id','delivery_date','internal_notes','priority']},
+  {table:'apm_quality_inspections',cols:['corrective_action','client_signoff','photo_data']},
+  {table:'apm_purchase_orders',cols:['lpo_no','payment_terms','delivery_address']},
+  {table:'overtime',cols:['food_provided','food_amount']},
+  {table:'inventory',cols:['location','grade','dimensions','weight_per_unit','min_stock_level','last_purchase_price','date_added']},
+  {table:'employees',cols:['emp_type','nationality','passport_no','iqama_expiry','permit_expiry','iban','emergency_contact','insurance_expiry','passport_file']},
+];
+
+const CRUD_TESTS = [
+  {label:'Insert + delete supplier',table:'apm_suppliers',rec:{name:'_TEST_SUPPLIER_',category:'steel'}},
+  {label:'Insert + delete inventory item',table:'inventory',rec:{name:'_TEST_ITEM_',qty:1,unit:'kg',category:'steel',location:'Test rack',grade:'S235'}},
+  {label:'Insert + delete employee',table:'employees',rec:{name:'_TEST_EMP_',role:'Tester',department:'QC',salary:0,status:'inactive'}},
+  {label:'Insert + delete quote',table:'quotes',rec:{quote_no:'TEST-Q-000',status:'draft',client_name:'_TEST_',project_name:'_TEST_',subtotal:0,vat:0,total:0,line_items:[]}},
+  {label:'Insert + delete invoice',table:'invoices',rec:{invoice_no:'TEST-INV-000',client_name:'_TEST_',subtotal:0,vat:0,total:0,payments:[],line_items:[]}},
+  {label:'Insert + delete supplier bill',table:'supplier_invoices',rec:{supplier_name:'_TEST_',category:'Material',subtotal:0,vat:0,total:0}},
+  {label:'Insert + delete credit note',table:'apm_credit_notes',rec:{cn_no:'TEST-CN-000',client_name:'_TEST_',payment_method:'cash',subtotal:0,vat:0,total:0,status:'pending',items:[]}},
+  {label:'Insert + delete overtime entry',table:'overtime',rec:{ot_date:new Date().toISOString().slice(0,10),hours:1,rate_mult:1.5,food_provided:false,food_amount:0}},
+  {label:'Insert + delete work order',table:'apm_work_orders',rec:{title:'_TEST_WO_',status:'draft',priority:'normal'}},
+  {label:'Insert + delete RFQ',table:'apm_rfqs',rec:{rfq_no:'TEST-RFQ-000',status:'open',items:[]}},
+  {label:'Insert + delete delivery note',table:'apm_delivery_notes',rec:{dn_no:'TEST-DN-000',client_name:'_TEST_',status:'pending',items:[]}},
+  {label:'Insert + delete work order',table:'apm_work_orders',rec:{title:'_TEST_WO_',status:'draft',priority:'normal',wo_no:'TEST-WO-000'}},
+  {label:'Insert + delete quality inspection',table:'apm_quality_inspections',rec:{type:'incoming',reference:'_TEST_',overall:'pending',checks:[]}},
+  {label:'Insert + delete scheduling entry',table:'apm_schedule',rec:{title:'_TEST_SCHED_',scheduled_date:new Date().toISOString().slice(0,10),est_hours:1,status:'scheduled'}},
+  {label:'Insert + delete subcontract order',table:'apm_subcontract_orders',rec:{subcontractor:'_TEST_',process:'galvanizing',status:'sent',items_sent:[]}},
+  {label:'Insert + delete leave request',table:'leave_requests',rec:{type:'Annual',status:'pending',from_date:new Date().toISOString().slice(0,10),to_date:new Date().toISOString().slice(0,10)}},
+  {label:'Insert + delete CRM contact',table:'crm_contacts',rec:{name:'_TEST_CONTACT_'}},
+  {label:'Insert + delete CRM lead',table:'crm_leads',rec:{title:'_TEST_LEAD_',stage:'new',value:0}},
+  {label:'Insert + delete project',table:'apm_projects',rec:{name:'_TEST_PROJECT_',status:'active'}},
+];
+
+let testResults=[];
+let running=false;
+
+function addResult(id,status,label,detail,error){
+  const existing=testResults.find(r=>r.id===id);
+  if(existing){existing.status=status;existing.detail=detail;existing.error=error;}
+  else testResults.push({id,status,label,detail,error});
+  renderResults();
+}
+
+function renderResults(){
+  const pass=testResults.filter(r=>r.status==='pass').length;
+  const fail=testResults.filter(r=>r.status==='fail').length;
+  const skip=testResults.filter(r=>r.status==='skip').length;
+  const total=testResults.length;
+
+  $('sumPass').textContent=pass;
+  $('sumFail').textContent=fail;
+  $('sumSkip').textContent=skip;
+  $('summaryRow').style.display=total>0?'flex':'none';
+  $('copyBtn').style.display=fail>0?'':'none';
+
+  $('testResults').innerHTML=testResults.map(r=>`
+    <div class="test-row ${r.status}">
+      <span class="test-icon">${r.status==='pass'?'&#10003;':r.status==='fail'?'&#10007;':r.status==='running'?'&#8943;':'&#8212;'}</span>
+      <span class="test-name">${esc(r.label)}</span>
+      <span class="test-detail">${esc(r.detail||'')}</span>
+    </div>
+    ${r.error?`<div class="test-error">${esc(r.error)}</div>`:''}
+  `).join('');
+}
+
+async function runAllTests(filter){
+  if(running)return;
+  running=true;
+  testResults=[];
+  $('progressWrap').style.display='';
+  $('summaryRow').style.display='none';
+  $('testResults').innerHTML='';
+  const start=Date.now();
+
+  const allTests=[
+    ...(!filter||filter==='tables'?TABLES.map(t=>({type:'table',...t})):[]),
+    ...(!filter||filter==='tables'?COL_TESTS.map(t=>({type:'cols',...t})):[]),
+    ...(!filter||filter==='crud'?CRUD_TESTS.map(t=>({type:'crud',...t})):[]),
+  ];
+  const total=allTests.length;
+
+  for(let i=0;i<allTests.length;i++){
+    const t=allTests[i];
+    const pct=Math.round((i/total)*100);
+    $('progressFill').style.width=pct+'%';
+    $('progressPct').textContent=pct+'%';
+    $('progressLabel').textContent='Testing: '+(t.label||t.table);
+
+    addResult(t.label||t.table,'running',t.label||t.table,'...','');
+
+    try{
+      if(t.type==='table'){
+        const col=t.pk||'id';
+        const{data,error}=await sb.from(t.name).select(col).limit(1);
+        if(error)addResult(t.label,'fail',t.label,'Table missing or no access',error.message);
+        else addResult(t.label,'pass',t.label,'Table accessible ('+(data?.length||0)+' rows sampled)','');
+      }
+      else if(t.type==='cols'){
+        const{data,error}=await sb.from(t.table).select(t.cols.join(',')).limit(1);
+        if(error){
+          const missing=t.cols.find(c=>error.message.includes(c))||'unknown';
+          addResult('cols:'+t.table,'fail','Columns: '+t.table,'Missing column: '+missing,error.message);
+        }else addResult('cols:'+t.table,'pass','Columns: '+t.table,t.cols.length+' columns verified','');
+      }
+      else if(t.type==='crud'){
+        // INSERT
+        const{data:ins,error:insErr}=await sb.from(t.table).insert(t.rec).select('id');
+        if(insErr){addResult(t.label,'fail',t.label,'Insert failed',insErr.message);continue;}
+        const id=ins?.[0]?.id;
+        if(!id){addResult(t.label,'fail',t.label,'Insert returned no ID','');continue;}
+        // DELETE
+        const{error:delErr}=await sb.from(t.table).delete().eq('id',id);
+        if(delErr){addResult(t.label,'fail',t.label,'Delete failed (record id: '+id+')',delErr.message);continue;}
+        addResult(t.label,'pass',t.label,'Insert + delete OK','');
+      }
+    }catch(e){
+      addResult(t.label||t.table,'fail',t.label||t.table,'Exception',e.message);
+    }
+  }
+
+  $('progressFill').style.width='100%';$('progressPct').textContent='100%';
+  $('progressLabel').textContent='Tests complete';
+  $('sumMs').textContent=Date.now()-start;
+  $('summaryRow').style.display='flex';
+  running=false;
+}
+
+function copyErrors(){
+  const fails=testResults.filter(r=>r.status==='fail');
+  if(!fails.length)return toast('No errors to copy');
+  const text='APM ERP CRASH TEST ERRORS:\n\n'+fails.map(f=>
+    '- '+f.label+'\n  '+f.detail+(f.error?'\n  Error: '+f.error:'')
+  ).join('\n\n');
+  navigator.clipboard.writeText(text).then(()=>toast('Errors copied - paste to Claude'));
+}
+
+// ================================================================
+// PASSWORD MANAGER
+// ================================================================
+const MODULES=[
+  {key:'mod_pass_crm',        label:'CRM',                  url:'crm.html'},
+  {key:'mod_pass_quotations', label:'Quotations',            url:'quotations.html'},
+  {key:'mod_pass_invoicing',  label:'Invoicing',             url:'invoicing.html'},
+  {key:'mod_pass_inventory',  label:'Inventory',             url:'inventory.html'},
+  {key:'mod_pass_hr',         label:'HR',                    url:'hr.html'},
+  {key:'mod_pass_costmanager',label:'Cost Manager',          url:'cost-manager.html'},
+  {key:'mod_pass_po',         label:'Purchase Orders',       url:'purchase-orders.html'},
+  {key:'mod_pass_reporting',  label:'Reporting',             url:'reporting.html'},
+  {key:'mod_pass_scanner',    label:'Document Scanner',      url:'scanner.html'},
+  {key:'mod_pass_workorders', label:'Work Orders',           url:'work-orders.html'},
+  {key:'mod_pass_quality',    label:'Quality Inspection',    url:'quality.html'},
+  {key:'mod_pass_estimator',  label:'AI Estimator',          url:'estimator.html'},
+  {key:'mod_pass_scheduling', label:'Production Scheduling', url:'scheduling.html'},
+  {key:'mod_pass_delivery',   label:'Delivery Notes',        url:'delivery.html'},
+  {key:'mod_pass_quote',      label:'Edit Quote (password)', url:'quotations.html'},
+];
+
+let currentPasswords={};
+
+async function loadPasswords(){
+  $('pwList').innerHTML='<div style="color:var(--text3);padding:20px 0;text-align:center">Loading...</div>';
+  const{data,error}=await sb.from('apm_settings').select('key,value').like('key','mod_pass_%');
+  if(error){$('pwList').innerHTML='<div style="color:#C0392B">Could not load. Run MASTER_SETUP.sql first.</div>';return;}
+  data.forEach(r=>currentPasswords[r.key]=r.value);
+  $('pwList').innerHTML=MODULES.map(m=>`
+    <div class="pw-row">
+      <div class="pw-module">${esc(m.label)}</div>
+      <span class="pw-current" id="cur_${m.key}">${esc(currentPasswords[m.key]||'not set')}</span>
+      <input class="pw-input" id="inp_${m.key}" placeholder="New password" autocomplete="new-password">
+      <button class="btn btn-sm" onclick="saveSinglePw('${m.key}')">Save</button>
+    </div>
+  `).join('');
+}
+
+async function saveSinglePw(key){
+  const inp=$('inp_'+key);if(!inp)return;
+  const val=inp.value.trim();if(!val)return toast('Enter a password',1);
+  const{error}=await sb.from('apm_settings').upsert({key,value:val},{onConflict:'key'});
+  if(error)return toast(error.message,1);
+  currentPasswords[key]=val;
+  const cur=$('cur_'+key);if(cur)cur.textContent=val;
+  inp.value='';
+  toast('Password updated');
+}
+
+async function saveAllPasswords(){
+  const changes=[];
+  MODULES.forEach(m=>{
+    const inp=$('inp_'+m.key);
+    if(inp&&inp.value.trim())changes.push({key:m.key,value:inp.value.trim()});
+  });
+  if(!changes.length)return toast('No changes to save',1);
+  const{error}=await sb.from('apm_settings').upsert(changes,{onConflict:'key'});
+  if(error)return toast(error.message,1);
+  changes.forEach(c=>{
+    currentPasswords[c.key]=c.value;
+    const cur=$('cur_'+c.key);if(cur)cur.textContent=c.value;
+    const inp=$('inp_'+c.key);if(inp)inp.value='';
+  });
+  toast(changes.length+' password'+(changes.length>1?'s':'')+' updated');
+}
+
+async function saveAdminPassword(){
+  const pw=$('adminPwNew').value.trim();
+  const confirm=$('adminPwConfirm').value.trim();
+  if(!pw)return toast('Enter a password',1);
+  if(pw!==confirm)return toast('Passwords do not match',1);
+  const{error}=await sb.from('apm_settings').upsert({key:'admin_pass',value:pw},{onConflict:'key'});
+  if(error)return toast(error.message,1);
+  $('adminPwNew').value='';$('adminPwConfirm').value='';
+  toast('Admin password updated');
+}
+
+async function saveLoginPassword(){
+  const pw=$('loginPwNew').value.trim();
+  const confirm=$('loginPwConfirm').value.trim();
+  if(!pw)return toast('Enter a password',1);
+  if(pw!==confirm)return toast('Passwords do not match',1);
+  const{error}=await sb.from('apm_settings').upsert({key:'login_pass',value:pw},{onConflict:'key'});
+  if(error)return toast(error.message,1);
+  $('loginPwNew').value='';$('loginPwConfirm').value='';
+  toast('Login password saved in Supabase. Remember to update login.html too.');
+}
+
+// ================================================================
+// ACCESS LOG
+// ================================================================
+// Known legitimate users - update this list in the Password Manager
+// The log will flag anyone NOT on this list
+const KNOWN_USERS_KEY = 'apm_known_users';
+
+async function loadLog(){
+  $('logContent').innerHTML='<div style="color:var(--text3);padding:30px 0;text-align:center">Loading...</div>';
+
+  // Only load genuinely suspicious entries:
+  // 1. ANOMALY entries (from anomaly detection)
+  // 2. Logins outside normal hours
+  // 3. Unrecognized names
+  const{data:allData,error}=await sb.from('apm_access_log')
+    .select('*').order('created_at',{ascending:false}).limit(500);
+  if(error){$('logContent').innerHTML='<div style="color:#C0392B">Could not load. Run security_setup.sql first.</div>';return;}
+
+  // Get known users from settings
+  const{data:settingsData}=await sb.from('apm_settings').select('value').eq('key','known_users').limit(1);
+  const knownUsers=(settingsData?.[0]?.value||'').toLowerCase().split(',').map(s=>s.trim()).filter(Boolean);
+
+  // Get anomaly hour settings
+  const{data:anomData}=await sb.from('apm_anomaly_settings').select('key,value');
+  const cfg={};(anomData||[]).forEach(r=>cfg[r.key]=r.value);
+  const afterHour=parseInt(cfg.alert_after_hour||'20');
+  const beforeHour=parseInt(cfg.alert_before_hour||'6');
+  const anomalyOn=cfg.anomaly_detection!=='off';
+
+  // Filter to only suspicious events
+  const suspicious=[];
+  const loginEvents=[];
+
+  (allData||[]).forEach(e=>{
+    const hour=new Date(e.created_at).getHours();
+    const name=(e.user_name||'').toLowerCase().trim();
+    const action=(e.action||'');
+    const isAnomaly=action.includes('ANOMALY');
+    const isOffHours=anomalyOn&&(hour>=afterHour||hour<beforeHour);
+    const isUnknown=knownUsers.length>0&&!knownUsers.includes(name);
+
+    if(e.module==='Login'&&action==='signed_in'){
+      loginEvents.push({...e,isOffHours,isUnknown});
+      if(isOffHours||isUnknown)suspicious.push({...e,reason:isUnknown?'Unknown name':('Login at '+(new Date(e.created_at).toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit'})))});
+    } else if(isAnomaly){
+      suspicious.push({...e,reason:action.replace('ANOMALY: ','')});
+    }
+  });
+
+  if(!suspicious.length&&!loginEvents.length){
+    $('logContent').innerHTML='<div style="color:var(--text3);padding:40px 20px;text-align:center"><div style="font-size:32px;margin-bottom:12px">&#128274;</div><strong style="display:block;color:var(--text);margin-bottom:4px">All clear</strong>No suspicious activity detected.</div>';
+    return;
+  }
+
+  let html='';
+
+  // Show suspicious events first
+  if(suspicious.length){
+    html+=`<div style="background:rgba(192,57,43,.06);border:1px solid #C0392B44;border-radius:10px;padding:18px;margin-bottom:20px">
+      <div style="font-size:13px;font-weight:700;color:#C0392B;margin-bottom:12px">&#9888; ${suspicious.length} suspicious event${suspicious.length>1?'s':''} detected</div>
+      ${suspicious.map(e=>`<div style="display:flex;align-items:center;gap:12px;padding:10px 12px;border-radius:7px;margin-bottom:6px;background:rgba(192,57,43,.08)">
+        <span style="font-weight:700;font-size:13.5px;color:#C0392B;min-width:120px">${esc(e.user_name||'?')}</span>
+        <span style="font-size:13px;flex:1;color:var(--text)">${esc(e.reason)}</span>
+        <span style="font-size:12px;color:var(--text3)">${new Date(e.created_at).toLocaleString('en-GB',{day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'})}</span>
+      </div>`).join('')}
+    </div>`;
+  }
+
+  // Normal login history (clean)
+  if(loginEvents.length){
+    html+=`<div style="font-size:12px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--text3);margin-bottom:10px">Login history</div>`;
+    html+=loginEvents.map(e=>`<div style="display:flex;align-items:center;gap:12px;padding:10px 14px;border-radius:7px;margin-bottom:5px;background:var(--bg1);border:1px solid ${e.isUnknown||e.isOffHours?'#C0392B44':'var(--border)'}">
+      <span style="font-size:16px">&#128273;</span>
+      <span style="font-weight:600;font-size:13.5px;flex:1;color:${e.isUnknown||e.isOffHours?'#C0392B':'var(--text)'}">${esc(e.user_name||'?')}</span>
+      <span style="font-size:12px;color:var(--text3)">${new Date(e.created_at).toLocaleString('en-GB',{weekday:'short',day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'})}</span>
+      ${e.isOffHours?'<span style="font-size:11px;font-weight:700;color:#C0392B;background:rgba(192,57,43,.12);padding:2px 8px;border-radius:4px">OFF HOURS</span>':''}
+      ${e.isUnknown?'<span style="font-size:11px;font-weight:700;color:#C0392B;background:rgba(192,57,43,.12);padding:2px 8px;border-radius:4px">UNKNOWN NAME</span>':''}
+    </div>`).join('');
+  }
+
+  $('logContent').innerHTML=html;
+}
+
+async function clearLog(){
+  if(!confirm('Clear the entire access log? This cannot be undone.'))return;
+  const{error}=await sb.from('apm_access_log').delete().neq('id','00000000-0000-0000-0000-000000000000');
+  if(error)return toast(error.message,1);
+  toast('Log cleared');loadLog();
+}
+
+
+// ================================================================
+// SECURITY TAB FUNCTIONS
+// ================================================================
+async function loadKnownUsers(){
+  const{data}=await sb.from('apm_settings').select('value').eq('key','known_users').limit(1);
+  if(data&&data[0]&&$('knownUsersInput'))$('knownUsersInput').value=data[0].value||'';
+  if($('knownUsersNote')&&data&&data[0]&&data[0].value){
+    const names=data[0].value.split(',').map(s=>s.trim()).filter(Boolean);
+    $('knownUsersNote').textContent=names.length+' authorized user'+(names.length!==1?'s':'')+': '+names.join(', ');
+  }
+}
+async function saveKnownUsers(){
+  const val=$('knownUsersInput')?.value.trim();
+  if(!val)return toast('Enter at least one name',1);
+  const{error}=await sb.from('apm_settings').upsert({key:'known_users',value:val},{onConflict:'key'});
+  if(error)return toast(error.message,1);
+  toast('Known users saved -- access log will now flag anyone else');
+  loadKnownUsers();
+}
+
+async function loadPermissions(){
+  $('permList').innerHTML='<div style="color:var(--text3);text-align:center;padding:20px">Loading...</div>';
+  const{data,error}=await sb.from('apm_user_permissions').select('*').eq('active',true).order('user_name');
+  if(error){$('permList').innerHTML='<div style="color:#C0392B">Run insider_protection.sql first.</div>';return;}
+  if(!data||!data.length){$('permList').innerHTML='<div style="color:var(--text3);padding:14px 0">No restrictions set. All users have full access.</div>';return;}
+  $('permList').innerHTML=data.map(p=>`
+    <div style="display:flex;align-items:center;gap:12px;padding:10px 14px;border:1px solid var(--border);border-radius:8px;margin-bottom:8px">
+      <div style="flex:1"><strong>${esc(p.user_name)}</strong> - ${esc(p.module)}</div>
+      <span style="font-size:12.5px;color:${p.can_edit?'#2D7D46':'#C0392B'};font-weight:600">${p.can_edit?'Full':'Read-only'}</span>
+      <span style="font-size:12.5px;color:${p.can_export?'#2D7D46':'#E67E22'};font-weight:600">${p.can_export?'Can export':'No export'}</span>
+      <button class="btn btn-danger btn-sm" onclick="removePermission('${p.id}')">Remove</button>
+    </div>`).join('');
+}
+
+async function addPermission(){
+  const user=$('permUser').value.trim();
+  if(!user)return toast('Enter the user name exactly as they type it at login',1);
+  const module=$('permModule').value;
+  const level=$('permLevel').value;
+  const recs=[];
+  const modules=module==='All modules'?['CRM','Quotations','Invoicing','Inventory','HR','Cost Manager','Purchase Orders','Reporting','Work Orders','Quality Inspection']:[ module];
+  modules.forEach(m=>recs.push({
+    user_name:user,module:m,
+    can_edit:level==='full',
+    can_export:level==='noexport'?false:level==='full',
+    active:true
+  }));
+  const{error}=await sb.from('apm_user_permissions').upsert(recs,{onConflict:'user_name,module'});
+  if(error)return toast(error.message,1);
+  $('permUser').value='';
+  toast('Restriction added');loadPermissions();
+}
+
+async function removePermission(id){
+  const{error}=await sb.from('apm_user_permissions').update({active:false}).eq('id',id);
+  if(error)return toast(error.message,1);
+  toast('Removed');loadPermissions();
+}
+
+async function loadAnomalySettings(){
+  $('anomalySettings').innerHTML='<div style="color:var(--text3);text-align:center;padding:20px">Loading...</div>';
+  const{data,error}=await sb.from('apm_anomaly_settings').select('*');
+  if(error){$('anomalySettings').innerHTML='<div style="color:#C0392B">Run insider_protection.sql first.</div>';return;}
+  const cfg={};data.forEach(r=>cfg[r.key]=r.value);
+  $('anomalySettings').innerHTML=`
+    <div class="f2" style="margin-bottom:14px">
+      <div class="field"><label>Anomaly detection</label>
+        <select id="anom_detection">
+          <option value="on" ${cfg.anomaly_detection==='on'?'selected':''}>On - flag suspicious activity</option>
+          <option value="off" ${cfg.anomaly_detection==='off'?'selected':''}>Off - no flagging</option>
+        </select>
+      </div>
+      <div class="field"><label>Max modules per minute before flagging</label>
+        <input id="anom_mpm" type="number" min="2" max="20" value="${cfg.alert_modules_per_min||5}">
+      </div>
+    </div>
+    <div class="f2" style="margin-bottom:16px">
+      <div class="field"><label>Flag access after this hour (24h)</label>
+        <input id="anom_after" type="number" min="0" max="23" value="${cfg.alert_after_hour||20}" placeholder="20 = 8pm">
+      </div>
+      <div class="field"><label>Flag access before this hour (24h)</label>
+        <input id="anom_before" type="number" min="0" max="23" value="${cfg.alert_before_hour||6}" placeholder="6 = 6am">
+      </div>
+    </div>
+    <button class="btn btn-gold btn-sm" onclick="saveAnomalySettings()">Save settings</button>`;
+}
+
+async function saveAnomalySettings(){
+  const updates=[
+    {key:'anomaly_detection',    value:$('anom_detection').value},
+    {key:'alert_modules_per_min',value:$('anom_mpm').value},
+    {key:'alert_after_hour',     value:$('anom_after').value},
+    {key:'alert_before_hour',    value:$('anom_before').value},
+  ];
+  const{error}=await sb.from('apm_anomaly_settings').upsert(updates,{onConflict:'key'});
+  if(error)return toast(error.message,1);
+  toast('Anomaly settings saved');
+}
+
+async function decodeWatermark(){
+  const paste=$('wmPaste').value;
+  if(!paste.trim())return toast('Paste some content first',1);
+  // Extract zero-width characters and decode
+  const zwChars=paste.split('').filter(c=>c==='‍'||c==='‌');
+  if(zwChars.length<8){
+    $('wmResult').innerHTML='<div style="color:#C0392B;padding:12px 16px;border:1px solid #C0392B44;border-radius:8px">No watermark found in this content. The leak may not have come from this ERP, or the watermark was stripped out.</div>';
+    return;
+  }
+  // Decode bits back to text
+  let decoded='';
+  for(let i=0;i<zwChars.length-7;i+=8){
+    const byte=zwChars.slice(i,i+8).map(c=>c==='‍'?'1':'0').join('');
+    const code=parseInt(byte,2);
+    if(code>31&&code<127)decoded+=String.fromCharCode(code);
+  }
+  if(!decoded){
+    $('wmResult').innerHTML='<div style="color:#C0392B;padding:12px 16px;border:1px solid #C0392B44;border-radius:8px">Could not decode watermark.</div>';
+    return;
+  }
+  // Look up in watermarks table
+  const{data}=await sb.from('apm_watermarks').select('*').eq('wm_code',decoded).limit(1);
+  if(data&&data[0]){
+    const w=data[0];
+    $('wmResult').innerHTML=`<div style="padding:16px;border:2px solid #C0392B;border-radius:8px;background:rgba(192,57,43,.05)">
+      <div style="font-size:16px;font-weight:700;color:#C0392B;margin-bottom:8px">Source identified</div>
+      <div style="font-size:14px;margin-bottom:4px">User: <strong>${esc(w.user_name)}</strong></div>
+      <div style="font-size:14px;margin-bottom:4px">Module: <strong>${esc(w.module)}</strong></div>
+      <div style="font-size:14px;margin-bottom:4px">When: <strong>${new Date(w.created_at).toLocaleString('en-GB')}</strong></div>
+      <div style="font-size:13px;color:var(--text3);margin-top:8px">Watermark code: ${esc(decoded)}</div>
+    </div>`;
+  }else{
+    $('wmResult').innerHTML=`<div style="padding:16px;border:1px solid var(--border);border-radius:8px">
+      <div style="font-weight:700;margin-bottom:4px">Watermark found: <code>${esc(decoded)}</code></div>
+      <div style="color:var(--text3);font-size:13px">This code exists but was not found in the watermark database. It may be from before watermarking was enabled.</div>
+    </div>`;
+  }
+}
+
+</script>
+</body>
+</html>
